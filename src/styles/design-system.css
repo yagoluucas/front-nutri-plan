@@ -1,0 +1,149 @@
+@theme {
+   /* Font family */
+   --font-primary: "Inter", "Noto Sans", system-ui, sans-serif;
+   /* Coloquei a mesma pois quando eu mudar, é só mudar aqui e não precisa ir em todos os itens que usam fontes secundárias */
+   --font-secondary: "Inter", "Noto Sans", system-ui, sans-serif;
+
+   /* Font weights */
+   --font-weight-normal: 400;
+   --font-weight-medium: 500;
+   --font-weight-semibold: 600;
+   --font-weight-bold: 700;
+
+   /* Typography */
+   --text-display: 36px;
+   --text-display--line-height: 40px;
+
+   --text-heading-h1: 30px;
+   --text-heading-h1--line-height: 36px;
+
+   --text-heading-h2: 24px;
+   --text-heading-h2--line-height: 32px;
+
+   --text-heading-h3: 20px;
+   --text-heading-h3--line-height: 28px;
+
+   --text-heading-h4: 18px;
+   --text-heading-h4--line-height: 28px;
+
+   --text-body-large: 18px;
+   --text-body-large--line-height: 28px;
+
+   --text-body-default: 16px;
+   --text-body-default--line-height: 24px;
+
+   --text-body-small: 14px;
+   --text-body-small--line-height: 20px;
+
+   --text-label: 14px;
+   --text-label--line-height: 20px;
+
+   --text-button: 14px;
+   --text-button--line-height: 20px;
+
+   --text-caption: 12px;
+   --text-caption--line-height: 16px;
+
+   /* Brand colors */
+   --color-brand-50: #E6F4F0;
+   --color-brand-100: #CDEAE1;
+   --color-brand-200: #B4DFD2;
+   --color-brand-300: #9BD5C3;
+   --color-brand-400: #82CAB4;
+   --color-brand-500: #69C0A5;
+   --color-brand-600: #059669;
+   --color-brand-700: #047857;
+   --color-brand-800: #065F46;
+   --color-brand-900: #064E3B;
+   --color-brand-950: #022C22;
+
+   /* Action colors - Primary */
+   --color-action-primary: #059669;
+   --color-action-primary-hover: #047857;
+   --color-action-primary-pressed: #065F46;
+   --color-action-primary-focus: #10B981;
+   --color-action-primary-disabled: #A7F3D0;
+   --color-action-primary-text: #FFFFFF;
+
+   /* Action colors - Secondary */
+   --color-action-secondary: #F4F4F5;
+   --color-action-secondary-hover: #E4E4E7;
+   --color-action-secondary-pressed: #D4D4D8;
+   --color-action-secondary-focus: #A1A1AA;
+   --color-action-secondary-disabled: #F4F4F5;
+   --color-action-secondary-text: #09090B;
+
+   /* Action colors - Ghost */
+   --color-action-ghost-bg: transparent;
+   --color-action-ghost-bg-hover: #F4F4F5;
+   --color-action-ghost-bg-pressed: #E4E4E7;
+   --color-action-ghost-focus: #D4D4D8;
+   --color-action-ghost-text: #52525B;
+   --color-action-ghost-text-hover: #09090B;
+
+   /* Action colors - Destructive */
+   --color-action-destructive: #DC2626;
+   --color-action-destructive-hover: #B91C1C;
+   --color-action-destructive-pressed: #991B1B;
+   --color-action-destructive-focus: #F87171;
+   --color-action-destructive-disabled: #FECACA;
+   --color-action-destructive-text: #FFFFFF;
+
+   /* Content colors */
+   --color-content-primary: #09090B;
+   --color-content-secondary: #52525B;
+   --color-content-muted: #71717A;
+   --color-content-placeholder: #A1A1AA;
+   --color-content-disabled: #A1A1AA;
+   --color-content-inverse: #FFFFFF;
+
+   /* Background colors */
+   --color-background-page: #FFFFFF;
+   --color-background-subtle: #FAFAFA;
+
+   /* Surface colors */
+   --color-surface-default: #FFFFFF;
+   --color-surface-muted: #F4F4F5;
+   --color-surface-elevated: #FFFFFF;
+
+   /* Border and divider colors */
+   --color-border-subtle: #F4F4F5;
+   --color-border-default: #E4E4E7;
+   --color-border-strong: #D4D4D8;
+   --color-divider-default: #E4E4E7;
+
+   /* Feedback colors - Error */
+   --color-feedback-error-bg: #FEF2F2;
+   --color-feedback-error-border: #FECACA;
+   --color-feedback-error-text: #991B1B;
+   --color-feedback-error-solid: #DC2626;
+
+   /* Feedback colors - Warning */
+   --color-feedback-warning-bg: #FFFBEB;
+   --color-feedback-warning-border: #FDE68A;
+   --color-feedback-warning-text: #92400E;
+   --color-feedback-warning-solid: #F59E0B;
+
+   /* Feedback colors - Success */
+   --color-feedback-success-bg: #F0FDF4;
+   --color-feedback-success-border: #BBF7D0;
+   --color-feedback-success-text: #166534;
+   --color-feedback-success-solid: #16A34A;
+
+   /* Feedback colors - Info */
+   --color-feedback-info-bg: #EFF6FF;
+   --color-feedback-info-border: #BFDBFE;
+   --color-feedback-info-text: #1E40AF;
+   --color-feedback-info-solid: #2563EB;
+
+   /* Radius */
+   --radius-sm: 4px;
+   --radius-md: 6px;
+   --radius-lg: 8px;
+
+   /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  
+}

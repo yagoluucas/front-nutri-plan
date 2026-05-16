@@ -14,3 +14,8 @@ Este é um projeto para gerenciamento e envios de dietas.
 - **lucide-react**: ícones da interface.
 - **sonner**: notificações/toasts de sucesso e erro.
 - **@react-pdf/renderer**: geração e download do plano alimentar em PDF.
+
+## Documentação
+
+Para informações técnicas e detalhes sobre o padrão do projeto, consulte a pasta [`docs/`](./docs/):
+- [Estrutura do Projeto](./docs/estrutura-projeto.md)
