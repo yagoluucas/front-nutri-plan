@@ -5,11 +5,16 @@ import {
   LOGIN_ROUTE,
 } from "@/src/features/auth/constants";
 
+const PROTECTED_ROUTES = ["/dashboard", "/meu-perfil", "/pacientes", "/plano"];
+
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value;
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 
-  if (pathname.startsWith(DEFAULT_AUTH_REDIRECT) && !token) {
+  if (isProtectedRoute && !token) {
     const loginUrl = new URL(LOGIN_ROUTE, request.url);
     loginUrl.searchParams.set("redirectTo", `${pathname}${search}`);
 
@@ -24,5 +29,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/plano/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/meu-perfil/:path*", "/pacientes/:path*", "/plano/:path*", "/login"],
 };

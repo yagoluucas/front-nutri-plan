@@ -6,8 +6,15 @@ import { toast } from "sonner";
 import { LOGIN_ROUTE } from "../constants";
 import { clearAuthToken, logoutApi } from "../services/auth.service";
 
-export default function LogoutButton() {
+interface LogoutButtonProps {
+    isCollapsed?: boolean;
+}
+
+export default function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
     const router = useRouter();
+    const labelTransitionClass = isCollapsed
+        ? "max-w-0 -translate-x-1 opacity-0"
+        : "max-w-20 translate-x-0 opacity-100";
 
     const handleLogout = async () => {
         try {
@@ -25,11 +32,18 @@ export default function LogoutButton() {
         <button
             type="button"
             onClick={handleLogout}
-            className="text-body-small font-medium text-feedback-error-text flex items-center gap-2 hover:bg-feedback-error-bg p-2 rounded-lg transition-colors"
+            className="flex h-11 w-full items-center gap-3 overflow-hidden rounded-md px-3 text-body-small font-semibold text-feedback-error-text transition-colors hover:bg-feedback-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-feedback-error-border"
             title="Sair"
+            aria-label="Sair"
         >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Sair</span>
+            <span className="flex w-8 shrink-0 justify-center">
+                <LogOut size={16} />
+            </span>
+            <span
+                className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out ${labelTransitionClass}`}
+            >
+                Sair
+            </span>
         </button>
     );
 }
