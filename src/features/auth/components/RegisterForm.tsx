@@ -8,18 +8,42 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+    getPostAuthRedirectPath,
+    persistAuthToken,
+    registerApi,
+} from "../services/auth.service";
+
 interface RegisterFormProps {
     onSwitchToLogin: () => void;
 }
 
 export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.input<typeof registerSchema>, any, RegisterFormValues>({
+    const router = useRouter();
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.input<typeof registerSchema>, unknown, RegisterFormValues>({
         resolver: zodResolver(registerSchema),
     });
 
     const onSubmit = async (data: RegisterFormValues) => {
-        console.log("Register submit: ", data);
-        // TODO: call API to register
+        try {
+            const response = await registerApi(data);
+            if (response.token) {
+                persistAuthToken(response.token);
+                toast.success(response.message || "Cadastro realizado com sucesso!", {
+                    description: "Você será direcionado para criar seu plano alimentar.",
+                });
+                await new Promise((resolve) => setTimeout(resolve, 1200));
+                router.replace(getPostAuthRedirectPath());
+                router.refresh();
+                return;
+            }
+
+            toast.error("Cadastro realizado, mas o token de acesso não foi retornado.");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Falha ao realizar cadastro.");
+        }
     };
 
     return (

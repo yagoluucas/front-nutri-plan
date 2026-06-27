@@ -8,18 +8,39 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+    getPostAuthRedirectPath,
+    loginApi,
+    persistAuthToken,
+} from "../services/auth.service";
+
 interface LoginFormProps {
     onSwitchToRegister: () => void;
 }
 
 export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
+    const router = useRouter();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
     });
 
     const onSubmit = async (data: LoginFormValues) => {
-        console.log("Login submit: ", data);
-        // TODO: call API to login
+        try {
+            const response = await loginApi(data);
+            if (response.token) {
+                persistAuthToken(response.token);
+                toast.success(response.message || "Login realizado com sucesso!");
+                router.replace(getPostAuthRedirectPath());
+                router.refresh();
+                return;
+            }
+
+            toast.error("Login realizado, mas o token de acesso não foi retornado.");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Falha ao realizar login.");
+        }
     };
 
     return (
