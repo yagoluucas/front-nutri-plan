@@ -30,6 +30,7 @@ export interface IMealFood {
     id: string; // uuid for local list management
     codigoAlimento: string;
     nomeAlimento: string;
+    medidasCaseiras: IMedidaCaseira[]; // all available measures for editing
     medidaSelecionada: IMedidaCaseira;
     quantidade: number;
     totalGramas: number;

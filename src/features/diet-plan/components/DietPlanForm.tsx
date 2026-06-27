@@ -21,6 +21,7 @@ const INITIAL_STATE: IDietPlanState = {
 export default function DietPlanForm() {
     const [planState, setPlanState] = useState<IDietPlanState>(INITIAL_STATE);
     const [isMealEditorOpen, setIsMealEditorOpen] = useState(false);
+    const [editingMeal, setEditingMeal] = useState<IMeal | null>(null);
 
     // Ping the server on mount to "wake up" Render's free tier before the user needs it
     // Uses no-cors because we only need to wake the server, not read the response
@@ -37,43 +38,42 @@ export default function DietPlanForm() {
         }));
     };
 
-    const handleAddMeal = (meal: IMeal) => {
-        setPlanState(prev => {
-            const newRefeicoes = [...prev.refeicoes, meal];
-            // Recalculate grand totals
-            const newTotalMacros = newRefeicoes.reduce((acc, curr) => ({
-                cho: acc.cho + curr.totalMacros.cho,
-                ptn: acc.ptn + curr.totalMacros.ptn,
-                lip: acc.lip + curr.totalMacros.lip,
-                kcal: acc.kcal + curr.totalMacros.kcal,
-            }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
+    const recalcTotals = (refeicoes: IMeal[]) =>
+        refeicoes.reduce((acc, curr) => ({
+            cho: acc.cho + curr.totalMacros.cho,
+            ptn: acc.ptn + curr.totalMacros.ptn,
+            lip: acc.lip + curr.totalMacros.lip,
+            kcal: acc.kcal + curr.totalMacros.kcal,
+        }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
 
-            return {
-                ...prev,
-                refeicoes: newRefeicoes,
-                totalMacros: newTotalMacros
-            };
+    const handleSaveMeal = (meal: IMeal) => {
+        setPlanState(prev => {
+            const exists = prev.refeicoes.some(r => r.id === meal.id);
+            const newRefeicoes = exists
+                ? prev.refeicoes.map(r => r.id === meal.id ? meal : r)
+                : [...prev.refeicoes, meal];
+            return { ...prev, refeicoes: newRefeicoes, totalMacros: recalcTotals(newRefeicoes) };
         });
-        toast.success(`Refeição "${meal.nome}" adicionada!`);
+        setEditingMeal(null);
+        toast.success(editingMeal ? `Refeição "${meal.nome}" atualizada!` : `Refeição "${meal.nome}" adicionada!`);
     };
 
     const handleRemoveMeal = (id: string) => {
         setPlanState(prev => {
             const newRefeicoes = prev.refeicoes.filter(m => m.id !== id);
-            const newTotalMacros = newRefeicoes.reduce((acc, curr) => ({
-                cho: acc.cho + curr.totalMacros.cho,
-                ptn: acc.ptn + curr.totalMacros.ptn,
-                lip: acc.lip + curr.totalMacros.lip,
-                kcal: acc.kcal + curr.totalMacros.kcal,
-            }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
-
-            return {
-                ...prev,
-                refeicoes: newRefeicoes,
-                totalMacros: newTotalMacros
-            };
+            return { ...prev, refeicoes: newRefeicoes, totalMacros: recalcTotals(newRefeicoes) };
         });
         toast.success("Refeição removida.");
+    };
+
+    const handleOpenEdit = (meal: IMeal) => {
+        setEditingMeal(meal);
+        setIsMealEditorOpen(true);
+    };
+
+    const handleOpenNew = () => {
+        setEditingMeal(null);
+        setIsMealEditorOpen(true);
     };
 
     const handleSavePlan = () => {
@@ -106,7 +106,7 @@ export default function DietPlanForm() {
                 {planState.refeicoes.length === 0 ? (
                     <div className="bg-surface-default border border-border-default border-dashed rounded-xl p-12 text-center">
                         <p className="text-body-large text-content-secondary mb-4">Nenhuma refeição cadastrada ainda.</p>
-                        <Button variant="primary" onClick={() => setIsMealEditorOpen(true)}>
+                        <Button variant="primary" onClick={handleOpenNew}>
                             <Plus size={20} className="mr-2" /> Adicionar Primeira Refeição
                         </Button>
                     </div>
@@ -124,14 +124,14 @@ export default function DietPlanForm() {
                                     </div>
                                 </div>
                                 
-                                <div className="flex-1 space-y-2 mb-4">
+                                <div className="flex-1 space-y-1.5 mb-4">
                                     <p className="text-caption text-content-secondary mb-2">
                                         {meal.alimentos.length} {meal.alimentos.length === 1 ? 'alimento' : 'alimentos'}
                                     </p>
                                     {meal.alimentos.slice(0, 3).map(f => (
                                         <p key={f.id} className="text-body-small text-content-primary truncate">
                                             <span className="text-brand-500 mr-1">•</span>
-                                            {f.quantidade}x {f.medidaSelecionada.nomeMedida} {f.nomeAlimento}
+                                            {f.quantidade}x {f.medidaSelecionada.nomeMedida} · {f.nomeAlimento.length > 30 ? f.nomeAlimento.slice(0, 30) + '…' : f.nomeAlimento}
                                         </p>
                                     ))}
                                     {meal.alimentos.length > 3 && (
@@ -141,6 +141,7 @@ export default function DietPlanForm() {
                                     )}
                                 </div>
 
+                                {/* FIX #4: Edit + Remove buttons on meal cards */}
                                 <div className="mt-auto flex justify-between items-center pt-3 border-t border-border-subtle">
                                     <button 
                                         className="text-body-small text-feedback-error-text font-medium hover:underline"
@@ -148,13 +149,19 @@ export default function DietPlanForm() {
                                     >
                                         Remover
                                     </button>
+                                    <button 
+                                        className="text-body-small text-brand-700 font-semibold hover:text-brand-900 flex items-center gap-1 transition-colors"
+                                        onClick={() => handleOpenEdit(meal)}
+                                    >
+                                        Editar
+                                    </button>
                                 </div>
                             </div>
                         ))}
 
                         {/* Add new meal card button */}
                         <button
-                            onClick={() => setIsMealEditorOpen(true)}
+                            onClick={handleOpenNew}
                             className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-[200px]"
                         >
                             <Plus size={32} className="mb-2" />
@@ -178,8 +185,9 @@ export default function DietPlanForm() {
             {/* Meal Editor Modal */}
             <MealEditor 
                 isOpen={isMealEditorOpen} 
-                onClose={() => setIsMealEditorOpen(false)} 
-                onSave={handleAddMeal} 
+                onClose={() => { setIsMealEditorOpen(false); setEditingMeal(null); }} 
+                onSave={handleSaveMeal}
+                existingMeal={editingMeal}
             />
         </div>
     );
