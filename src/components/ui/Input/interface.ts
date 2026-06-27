@@ -1,9 +1,5 @@
-export interface IInput {
-    placeholder: string;
-    type: string;
-    id: string;
-    name: string;
-    isRequired?: boolean;
-    minLength?: number;
-    maxLength?: number;
+import React from "react";
+
+export interface IInput extends React.InputHTMLAttributes<HTMLInputElement> {
+    error?: string;
 }

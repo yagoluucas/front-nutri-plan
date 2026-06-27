@@ -1,26 +1,29 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+@import "tailwindcss";
 @import "../styles/design-system.css";
+@plugin "tailwindcss-animate";
 
 /* =========================
     DEFINIÇÕES GLOBAIS
 ========================= */
 
-* {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
+@layer base {
+    * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
 
-html {
-    font-family: var(--font-primary);
-}
+    html {
+        font-family: var(--font-primary);
+    }
 
-body {
-    background: var(--color-background-page);
-    color: var(--color-content-primary);
-}
+    body {
+        background: var(--color-background-page);
+        color: var(--color-content-primary);
+    }
 
-buton:disabled {
-    cursor: not-allowed;
+    button:disabled {
+        cursor: not-allowed;
+    }
 }
