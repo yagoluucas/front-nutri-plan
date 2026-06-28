@@ -8,7 +8,6 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     getPostAuthRedirectPath,
@@ -20,7 +19,6 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
-    const router = useRouter();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
     });
@@ -29,8 +27,10 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
         try {
             const response = await loginApi(data);
             toast.success(response.message || "Login realizado com sucesso!");
-            router.replace(getPostAuthRedirectPath());
-            router.refresh();
+
+            // Hard navigation garante que o middleware leia o cookie recém-definido
+            // antes de decidir o redirecionamento (evita race condition com router.replace)
+            window.location.href = getPostAuthRedirectPath();
 
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao realizar login.");
