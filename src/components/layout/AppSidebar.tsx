@@ -21,11 +21,11 @@ export default function AppSidebar() {
 
     return (
         <aside
-            className={`min-h-screen shrink-0 overflow-hidden border-r border-border-subtle bg-surface-default transition-[width] duration-300 ease-out ${
+            className={`relative z-50 h-full shrink-0 overflow-hidden border-r border-border-subtle bg-surface-default transition-[width] duration-300 ease-out ${
                 isExpanded ? "w-64" : "w-20"
             }`}
         >
-            <div className="sticky top-0 flex h-screen flex-col">
+            <div className="flex h-full min-h-0 flex-col">
                 <div className="flex h-16 items-center border-b border-border-subtle">
                     <div className="flex h-full w-20 shrink-0 items-center justify-center">
                         <button
@@ -49,7 +49,7 @@ export default function AppSidebar() {
                     </Link>
                 </div>
 
-                <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+                <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
                     {navigationItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -78,7 +78,7 @@ export default function AppSidebar() {
                     })}
                 </nav>
 
-                <div className="border-t border-border-subtle p-3">
+                <div className="shrink-0 border-t border-border-subtle p-3">
                     <div className="mb-3 flex h-14 items-center gap-3 overflow-hidden rounded-md bg-background-subtle px-3">
                         <span className="flex w-8 shrink-0 justify-center">
                             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-body-small font-bold text-action-primary">
