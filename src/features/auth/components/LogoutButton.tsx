@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LOGIN_ROUTE } from "../constants";
-import { clearAuthToken, logoutApi } from "../services/auth.service";
+import { logoutApi } from "../services/auth.service";
 
 interface LogoutButtonProps {
     isCollapsed?: boolean;
@@ -22,7 +22,6 @@ export default function LogoutButton({ isCollapsed = false }: LogoutButtonProps)
         } catch {
             toast.error("Não foi possível encerrar a sessão no servidor.");
         } finally {
-            clearAuthToken();
             router.replace(LOGIN_ROUTE);
             router.refresh();
         }

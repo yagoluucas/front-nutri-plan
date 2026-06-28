@@ -3,11 +3,9 @@ import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
 
 export const AUTH_API_URL =
   process.env.API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
   "https://api-nutri-plan.onrender.com";
 
-const TOKEN_KEYS = ["token", "accessToken", "access_token", "jwt"];
-const TOKEN_PARENT_KEYS = ["data", "result", "session", "auth", "user"];
+const TOKEN_KEYS = new Set(["token", "accesstoken", "access_token", "jwt"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -27,28 +25,24 @@ export async function readResponseBody(response: Response): Promise<unknown> {
   }
 }
 
-export function getAuthToken(payload: unknown): string | null {
+function isTokenKey(key: string) {
+  return TOKEN_KEYS.has(key.toLowerCase());
+}
+
+export function sanitizeAuthPayload(payload: unknown): unknown {
+  if (Array.isArray(payload)) {
+    return payload.map(sanitizeAuthPayload);
+  }
+
   if (!isRecord(payload)) {
-    return null;
+    return payload;
   }
 
-  for (const key of TOKEN_KEYS) {
-    const value = payload[key];
-
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-
-  for (const key of TOKEN_PARENT_KEYS) {
-    const token = getAuthToken(payload[key]);
-
-    if (token) {
-      return token;
-    }
-  }
-
-  return null;
+  return Object.fromEntries(
+    Object.entries(payload)
+      .filter(([key]) => !isTokenKey(key))
+      .map(([key, value]) => [key, sanitizeAuthPayload(value)]),
+  );
 }
 
 export function getBearerToken(authorizationHeader: string | null): string | null {
@@ -56,8 +50,8 @@ export function getBearerToken(authorizationHeader: string | null): string | nul
     return null;
   }
 
-  const [scheme, token] = authorizationHeader.split(" ");
-  return scheme?.toLowerCase() === "bearer" && token ? token : null;
+  const [scheme, token] = authorizationHeader.trim().split(/\s+/);
+  return scheme?.toLowerCase() === "bearer" && token?.trim() ? token.trim() : null;
 }
 
 export function getResponseMessage(payload: unknown, fallback: string): string {
@@ -74,8 +68,10 @@ export function authErrorResponse(
   status: number,
   fallbackMessage: string,
 ) {
-  if (isRecord(payload)) {
-    return NextResponse.json(payload, { status });
+  const safePayload = sanitizeAuthPayload(payload);
+
+  if (isRecord(safePayload)) {
+    return NextResponse.json(safePayload, { status });
   }
 
   return NextResponse.json(
@@ -85,10 +81,10 @@ export function authErrorResponse(
 }
 
 export function authSuccessResponse(payload: unknown, headerToken?: string | null) {
-  const token = getAuthToken(payload) || headerToken || null;
+  const token = headerToken?.trim() || null;
   const body = isRecord(payload)
-    ? { ...payload, ...(token ? { token } : {}) }
-    : { data: payload, ...(token ? { token } : {}) };
+    ? sanitizeAuthPayload(payload)
+    : { data: sanitizeAuthPayload(payload) };
   const response = NextResponse.json(body);
 
   if (token) {

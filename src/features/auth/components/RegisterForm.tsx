@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     getPostAuthRedirectPath,
-    persistAuthToken,
     registerApi,
 } from "../services/auth.service";
 
@@ -29,18 +28,12 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     const onSubmit = async (data: RegisterFormValues) => {
         try {
             const response = await registerApi(data);
-            if (response.token) {
-                persistAuthToken(response.token);
-                toast.success(response.message || "Cadastro realizado com sucesso!", {
-                    description: "Você será direcionado para criar seu plano alimentar.",
-                });
-                await new Promise((resolve) => setTimeout(resolve, 1200));
-                router.replace(getPostAuthRedirectPath());
-                router.refresh();
-                return;
-            }
-
-            toast.error("Cadastro realizado, mas o token de acesso não foi retornado.");
+            toast.success(response.message || "Cadastro realizado com sucesso!", {
+                description: "Você será direcionado para criar seu plano alimentar.",
+            });
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+            router.replace(getPostAuthRedirectPath());
+            router.refresh();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao realizar cadastro.");
         }

@@ -1,12 +1,10 @@
-import {
-    AUTH_TOKEN_STORAGE_KEY,
-    DEFAULT_AUTH_REDIRECT,
-} from "../constants";
+import { DEFAULT_AUTH_REDIRECT } from "../constants";
 import { LoginFormValues, RegisterFormValues } from "../schemas/auth.schemas";
 
 export interface AuthResponse {
     message?: string;
-    token?: string;
+    error?: boolean;
+    statusCode?: number;
     [key: string]: unknown;
 }
 
@@ -42,18 +40,6 @@ export async function logoutApi() {
         method: "POST",
         credentials: "include",
     });
-}
-
-export function persistAuthToken(token: string) {
-    if (typeof window !== "undefined") {
-        localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
-    }
-}
-
-export function clearAuthToken() {
-    if (typeof window !== "undefined") {
-        localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
-    }
 }
 
 export function getPostAuthRedirectPath() {

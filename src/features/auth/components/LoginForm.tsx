@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import {
     getPostAuthRedirectPath,
     loginApi,
-    persistAuthToken,
 } from "../services/auth.service";
 
 interface LoginFormProps {
@@ -29,15 +28,10 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     const onSubmit = async (data: LoginFormValues) => {
         try {
             const response = await loginApi(data);
-            if (response.token) {
-                persistAuthToken(response.token);
-                toast.success(response.message || "Login realizado com sucesso!");
-                router.replace(getPostAuthRedirectPath());
-                router.refresh();
-                return;
-            }
+            toast.success(response.message || "Login realizado com sucesso!");
+            router.replace(getPostAuthRedirectPath());
+            router.refresh();
 
-            toast.error("Login realizado, mas o token de acesso não foi retornado.");
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao realizar login.");
         }
