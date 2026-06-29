@@ -1,0 +1,4 @@
+interface:
+  display_name: "Front-end Security"
+  short_description: "Review Nutri Plan front-end security"
+  default_prompt: "Use $front-end-security to review a non-layout front-end change for security risks."

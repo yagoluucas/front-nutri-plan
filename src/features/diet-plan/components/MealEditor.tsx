@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { X, Plus, Trash2, ChevronDown, ChevronUp, Pencil, Check } from "lucide-react";
 import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
@@ -23,7 +23,6 @@ const DEFAULT_MEAL_NAMES = ["Café da Manhã", "Lanche da Manhã", "Almoço", "L
 function calcMealFood(base: IMealFood, medidaIndex: number, qty: number): IMealFood {
     const medida = base.medidasCaseiras[medidaIndex];
     const totalGramas = qty * medida.total;
-    const multiplier = totalGramas / 100;
 
     let cho = 0, ptn = 0, lip = 0, kcal = 0;
     const nutrientesCompletos = base.nutrientesCompletos.map(n => {
@@ -126,10 +125,12 @@ function buildMealFood(detail: IAlimentoDetail, medidaIndex: number, qty: number
 }
 
 export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: MealEditorProps) {
-    const [nome, setNome] = useState("");
-    const [horario, setHorario] = useState("");
-    const [observacoes, setObservacoes] = useState("");
-    const [alimentos, setAlimentos] = useState<IMealFood[]>([]);
+    const [nome, setNome] = useState(existingMeal?.nome || "");
+    const [horario, setHorario] = useState(existingMeal?.horario || "");
+    const [observacoes, setObservacoes] = useState(existingMeal?.observacoes || "");
+    const [alimentos, setAlimentos] = useState<IMealFood[]>(existingMeal?.alimentos || []);
+    const [substituicaoObservacoes, setSubstituicaoObservacoes] = useState(existingMeal?.substituicao?.observacoes || "");
+    const [substituicaoAlimentos, setSubstituicaoAlimentos] = useState<IMealFood[]>(existingMeal?.substituicao?.alimentos || []);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     // State for adding a new food
@@ -137,30 +138,15 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
     const [medidaSelecionadaIndex, setMedidaSelecionadaIndex] = useState<number>(0);
     const [quantidade, setQuantidade] = useState<string>("1");
     const [isLoadingFood, setIsLoadingFood] = useState(false);
-
-    // Pre-fill when editing existing meal
-    useEffect(() => {
-        if (isOpen) {
-            if (existingMeal) {
-                setNome(existingMeal.nome);
-                setHorario(existingMeal.horario);
-                setObservacoes(existingMeal.observacoes);
-                setAlimentos(existingMeal.alimentos);
-            } else {
-                setNome("");
-                setHorario("");
-                setObservacoes("");
-                setAlimentos([]);
-            }
-            setShowCancelConfirm(false);
-            setSelectedFoodDetail(null);
-        }
-    }, [isOpen, existingMeal]);
+    const [selectedSubstitutionFoodDetail, setSelectedSubstitutionFoodDetail] = useState<IAlimentoDetail | null>(null);
+    const [substituicaoMedidaIndex, setSubstituicaoMedidaIndex] = useState<number>(0);
+    const [substituicaoQuantidade, setSubstituicaoQuantidade] = useState<string>("1");
+    const [isLoadingSubstitutionFood, setIsLoadingSubstitutionFood] = useState(false);
 
     if (!isOpen) return null;
 
     const handleCancelClick = () => {
-        const isDirty = nome || horario || alimentos.length > 0;
+        const isDirty = nome || horario || alimentos.length > 0 || substituicaoAlimentos.length > 0;
         if (isDirty) setShowCancelConfirm(true);
         else onClose();
     };
@@ -193,6 +179,29 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
         setSelectedFoodDetail(null);
     };
 
+    const handleSelectSubstitutionFood = async (food: IAlimentoAutocomplete) => {
+        setIsLoadingSubstitutionFood(true);
+        try {
+            const detail = await getFoodDetail(food.codigoAlimento);
+            setSelectedSubstitutionFoodDetail(detail);
+            setSubstituicaoMedidaIndex(0);
+            setSubstituicaoQuantidade("1");
+        } catch {
+            toast.error("Erro ao carregar detalhes do alimento.");
+        } finally {
+            setIsLoadingSubstitutionFood(false);
+        }
+    };
+
+    const handleAddSubstitutionFood = () => {
+        if (!selectedSubstitutionFoodDetail) return;
+        const qty = parseFloat(substituicaoQuantidade);
+        if (isNaN(qty) || qty <= 0) return;
+        const newFood = buildMealFood(selectedSubstitutionFoodDetail, substituicaoMedidaIndex, qty);
+        setSubstituicaoAlimentos(prev => [...prev, newFood]);
+        setSelectedSubstitutionFoodDetail(null);
+    };
+
     const handleRemoveFood = (id: string) => {
         setAlimentos(prev => prev.filter(a => a.id !== id));
     };
@@ -201,12 +210,28 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
         setAlimentos(prev => prev.map(a => a.id === updated.id ? updated : a));
     };
 
+    const handleRemoveSubstitutionFood = (id: string) => {
+        setSubstituicaoAlimentos(prev => prev.filter(a => a.id !== id));
+    };
+
+    const handleUpdateSubstitutionFood = (updated: IMealFood) => {
+        setSubstituicaoAlimentos(prev => prev.map(a => a.id === updated.id ? updated : a));
+    };
+
     const handleSaveMeal = () => {
         if (!nome.trim()) { toast.error("Informe o nome da refeição."); return; }
         if (!horario) { toast.error("Informe o horário da refeição."); return; }
-        if (alimentos.length === 0) { toast.error("Adicione pelo menos um alimento."); return; }
+        if (alimentos.length === 0) { toast.error("Adicione pelo menos um alimento na opcao principal."); return; }
+        if (substituicaoAlimentos.length === 0) { toast.error("Adicione pelo menos um alimento na substituicao."); return; }
 
         const totalMacros = alimentos.reduce((acc, a) => ({
+            cho: acc.cho + a.macros.cho,
+            ptn: acc.ptn + a.macros.ptn,
+            lip: acc.lip + a.macros.lip,
+            kcal: acc.kcal + a.macros.kcal,
+        }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
+
+        const substituicaoTotalMacros = substituicaoAlimentos.reduce((acc, a) => ({
             cho: acc.cho + a.macros.cho,
             ptn: acc.ptn + a.macros.ptn,
             lip: acc.lip + a.macros.lip,
@@ -219,7 +244,14 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
             horario,
             observacoes,
             alimentos,
-            totalMacros
+            totalMacros,
+            substituicao: {
+                id: existingMeal?.substituicao?.id ?? crypto.randomUUID(),
+                titulo: "Substituicao",
+                observacoes: substituicaoObservacoes,
+                alimentos: substituicaoAlimentos,
+                totalMacros: substituicaoTotalMacros,
+            },
         };
 
         onSave(meal);
@@ -368,6 +400,99 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
                                         food={food}
                                         onRemove={() => handleRemoveFood(food.id)}
                                         onUpdate={handleUpdateFood}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="h-px bg-border-subtle" />
+
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-heading-h4 font-bold text-content-primary">Substituicao da Refeicao</h3>
+                            <p className="mt-1 text-body-small text-content-secondary">
+                                Monte uma opcao alternativa para esta mesma refeicao.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="meal_substitution_obs">Observacoes da substituicao (opcional)</Label>
+                            <Input
+                                id="meal_substitution_obs"
+                                type="text"
+                                placeholder="Ex: usar quando estiver fora de casa"
+                                value={substituicaoObservacoes}
+                                onChange={(e) => setSubstituicaoObservacoes(e.target.value)}
+                            />
+                        </div>
+
+                        <FoodSearchCombobox onSelectFood={handleSelectSubstitutionFood} />
+                        {isLoadingSubstitutionFood && <p className="text-body-small text-brand-600 animate-pulse">Carregando detalhes...</p>}
+
+                        {selectedSubstitutionFoodDetail && (
+                            <div className="bg-brand-50 p-4 rounded-xl border border-brand-200 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p className="text-caption text-brand-700 font-medium uppercase tracking-wider mb-1">Alimento selecionado</p>
+                                        <h4 className="font-semibold text-content-primary text-body-large">{selectedSubstitutionFoodDetail.nomeAlimento}</h4>
+                                    </div>
+                                    <button onClick={() => setSelectedSubstitutionFoodDetail(null)} className="text-content-secondary hover:text-content-primary p-1">
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                    <div className="space-y-2 md:col-span-2">
+                                        <Label>Medida Caseira</Label>
+                                        <select
+                                            className="w-full h-11 rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus shadow-sm"
+                                            value={substituicaoMedidaIndex}
+                                            onChange={(e) => setSubstituicaoMedidaIndex(Number(e.target.value))}
+                                        >
+                                            {selectedSubstitutionFoodDetail.medidasCaseiras.map((m, idx) => (
+                                                <option key={idx} value={idx}>
+                                                    {m.nomeMedida} ({m.total}{m.unidadeMedida})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Quantidade</Label>
+                                        <input
+                                            type="number"
+                                            step="0.5"
+                                            min="0.1"
+                                            value={substituicaoQuantidade}
+                                            onChange={(e) => setSubstituicaoQuantidade(e.target.value)}
+                                            onWheel={(e) => e.currentTarget.blur()}
+                                            className="w-full h-11 rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus shadow-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex justify-end">
+                                    <Button variant="primary" onClick={handleAddSubstitutionFood}>
+                                        <Plus size={18} className="mr-2" /> Adicionar substituicao
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {substituicaoAlimentos.length > 0 && (
+                        <div className="space-y-3">
+                            <h3 className="text-heading-h4 font-bold text-content-primary">
+                                Alimentos da Substituicao
+                                <span className="ml-2 text-caption font-normal text-content-muted">({substituicaoAlimentos.length})</span>
+                            </h3>
+                            <div className="border border-border-default rounded-xl overflow-hidden divide-y divide-border-subtle">
+                                {substituicaoAlimentos.map(food => (
+                                    <FoodListItem
+                                        key={food.id}
+                                        food={food}
+                                        onRemove={() => handleRemoveSubstitutionFood(food.id)}
+                                        onUpdate={handleUpdateSubstitutionFood}
                                     />
                                 ))}
                             </div>

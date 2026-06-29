@@ -48,37 +48,45 @@ export interface IMealFood {
     }[];
 }
 
+export interface IMacroTotals {
+    cho: number;
+    ptn: number;
+    lip: number;
+    kcal: number;
+}
+
+export interface IMealOption {
+    id: string;
+    titulo: string;
+    observacoes: string;
+    alimentos: IMealFood[];
+    totalMacros: IMacroTotals;
+}
+
 export interface IMeal {
     id: string; // uuid
     nome: string;
     horario: string; // "HH:MM"
     observacoes: string;
     alimentos: IMealFood[];
+    substituicao?: IMealOption;
     // Totals for the meal
-    totalMacros: {
-        cho: number;
-        ptn: number;
-        lip: number;
-        kcal: number;
-    };
+    totalMacros: IMacroTotals;
 }
 
 export interface IPatientData {
     nome: string;
-    sexo: string;
     email: string;
-    objetivo: string;
-    observacoes: string;
+    dataNascimento?: string;
 }
 
 export interface IDietPlanState {
+    id?: string;
+    titulo: string;
+    objetivoDoPlano: string;
+    orientacoesGerais: string;
     paciente: IPatientData;
     refeicoes: IMeal[];
     // Grand totals for the entire plan
-    totalMacros: {
-        cho: number;
-        ptn: number;
-        lip: number;
-        kcal: number;
-    };
+    totalMacros: IMacroTotals;
 }

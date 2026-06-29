@@ -30,7 +30,7 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
 
             // Hard navigation garante que o middleware leia o cookie recém-definido
             // antes de decidir o redirecionamento (evita race condition com router.replace)
-            window.location.href = getPostAuthRedirectPath();
+            window.location.assign(getPostAuthRedirectPath());
 
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao realizar login.");
