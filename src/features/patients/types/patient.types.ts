@@ -7,10 +7,21 @@ export interface DietPlanRecord extends IDietPlanState {
     updatedAt: string;
 }
 
-export interface Patient extends PatientFormValues {
+export interface PatientSummary {
     id: string;
-    planosAlimentares: DietPlanRecord[];
+    nome: string;
+    sobrenome: string;
+    email?: string;
+    sexo: PatientFormValues["sexo"];
+    qtdPlanos: number;
     createdAt: string;
     updatedAt: string;
 }
 
+export interface Patient extends PatientFormValues {
+    id: string;
+    idNutricionista: string;
+    planosAlimentares: DietPlanRecord[];
+    createdAt: string;
+    updatedAt: string;
+}

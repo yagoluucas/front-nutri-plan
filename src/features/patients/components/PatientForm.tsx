@@ -13,7 +13,7 @@ interface PatientFormProps {
     isSubmitting?: boolean;
     submitLabel?: string;
     onCancel: () => void;
-    onSubmit: (values: PatientFormValues) => void;
+    onSubmit: (values: PatientFormValues) => void | Promise<void>;
 }
 
 const textareaClasses = "w-full min-h-28 rounded-lg border border-border-default bg-surface-default p-4 text-body-default text-content-primary placeholder:text-content-placeholder shadow-sm transition-all resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus";

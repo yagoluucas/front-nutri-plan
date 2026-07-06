@@ -1,12 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, FileDown, Pencil, Plus, Trash2, UtensilsCrossed, UserPen } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, FileDown, Pencil, Plus, Trash2, UtensilsCrossed, UserPen } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import { useLocalStore } from "@/src/features/local-store/LocalStoreProvider";
 import PDFGenerator from "@/src/features/diet-plan/components/PDFGenerator";
+import { calculatePlanMicronutrients } from "@/src/features/diet-plan/utils/nutritionCalculations";
+import { getPatientApi } from "@/src/features/patients/services/patient.service";
+import type { Patient } from "@/src/features/patients/types/patient.types";
 
 function formatDate(value?: string) {
     if (!value) {
@@ -26,18 +30,83 @@ function formatDateTime(value: string) {
     }).format(new Date(value));
 }
 
+function formatNutrientValue(value: number, unit: string) {
+    const formattedValue = new Intl.NumberFormat("pt-BR", {
+        maximumFractionDigits: value >= 10 ? 1 : 2,
+    }).format(value);
+
+    return `${formattedValue}${unit}`;
+}
+
 export default function PacienteDetalhePage() {
     const params = useParams();
     const router = useRouter();
     const patientId = typeof params.id === "string" ? params.id : "";
-    const { deleteDietPlan, getPatientById, profile } = useLocalStore();
-    const patient = getPatientById(patientId);
+    const { profile } = useLocalStore();
+    const [patient, setPatient] = useState<Patient | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
     const primaryPlan = patient?.planosAlimentares[0];
 
     const handleDeletePlan = (planId: string) => {
-        deleteDietPlan(patientId, planId);
-        toast.success("Plano removido desta sessao.");
+        setPatient((currentPatient) => currentPatient
+            ? {
+                ...currentPatient,
+                planosAlimentares: currentPatient.planosAlimentares.filter((plan) => plan.id !== planId),
+            }
+            : currentPatient);
+        toast.success("Plano removido da visualizacao atual.");
     };
+
+    useEffect(() => {
+        let isActive = true;
+
+        async function loadPatient() {
+            try {
+                setIsLoading(true);
+                setErrorMessage(null);
+                const loadedPatient = await getPatientApi(patientId);
+
+                if (isActive) {
+                    setPatient(loadedPatient);
+                }
+            } catch (error) {
+                if (isActive) {
+                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar o paciente.");
+                }
+            } finally {
+                if (isActive) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        if (patientId) {
+            loadPatient();
+        }
+
+        return () => {
+            isActive = false;
+        };
+    }, [patientId]);
+
+    if (isLoading) {
+        return (
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+                <Button type="button" variant="ghost" className="px-0" onClick={() => router.push("/pacientes")}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar
+                </Button>
+                <section className="rounded-lg border border-border-default bg-surface-default p-10 text-center shadow-sm">
+                    <h1 className="text-heading-h2 font-bold text-content-primary">Carregando paciente...</h1>
+                    <p className="mt-2 text-body-default text-content-secondary">
+                        Buscando os dados salvos no banco.
+                    </p>
+                </section>
+            </div>
+        );
+    }
 
     if (!patient) {
         return (
@@ -49,7 +118,7 @@ export default function PacienteDetalhePage() {
                 <section className="rounded-lg border border-border-default bg-surface-default p-10 text-center shadow-sm">
                     <h1 className="text-heading-h2 font-bold text-content-primary">Paciente nao encontrado</h1>
                     <p className="mt-2 text-body-default text-content-secondary">
-                        O cadastro pode ter sido perdido ao recarregar a sessao local.
+                        {errorMessage || "Nao encontramos este cadastro no banco de dados."}
                     </p>
                     <Link href="/pacientes" className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-action-primary px-6 text-button font-semibold text-action-primary-text shadow-sm transition-colors hover:bg-action-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus">
                         Ver pacientes
@@ -110,35 +179,104 @@ export default function PacienteDetalhePage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {patient.planosAlimentares.map((plan) => (
-                                <article key={plan.id} className="rounded-lg border border-border-default bg-surface-default p-5 shadow-sm">
-                                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                        <div>
-                                            <h3 className="text-heading-h4 font-semibold text-content-primary">
-                                                {plan.titulo || "Plano alimentar"}
-                                            </h3>
-                                            <p className="mt-1 text-body-small text-content-secondary">
-                                                {plan.refeicoes.length} {plan.refeicoes.length === 1 ? "refeicao" : "refeicoes"} cadastradas
-                                            </p>
-                                            <p className="mt-1 text-caption text-content-muted">
-                                                Atualizado em {formatDateTime(plan.updatedAt)}
-                                            </p>
+                            {patient.planosAlimentares.map((plan) => {
+                                const isExpanded = expandedPlanId === plan.id;
+                                const micronutrients = calculatePlanMicronutrients(plan.refeicoes);
+
+                                return (
+                                    <article key={plan.id} className="rounded-lg border border-border-default bg-surface-default p-5 shadow-sm">
+                                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                                            <div>
+                                                <h3 className="text-heading-h4 font-semibold text-content-primary">
+                                                    {plan.titulo || "Plano alimentar"}
+                                                </h3>
+                                                <p className="mt-1 text-body-small text-content-secondary">
+                                                    {plan.refeicoes.length} {plan.refeicoes.length === 1 ? "refeicao" : "refeicoes"} cadastradas
+                                                </p>
+                                                <p className="mt-1 text-caption text-content-muted">
+                                                    Atualizado em {formatDateTime(plan.updatedAt)}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
+                                                >
+                                                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                                                    Ver detalhes
+                                                </Button>
+                                                <PDFGenerator data={plan} profile={profile} disabled={plan.refeicoes.length === 0} label="Salvar e baixar PDF" />
+                                                <Link href={`/pacientes/${patient.id}/plano`} className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-6 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus">
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    Modificar
+                                                </Link>
+                                                <Button type="button" variant="destructive" onClick={() => handleDeletePlan(plan.id)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Excluir
+                                                </Button>
+                                            </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <PDFGenerator data={plan} profile={profile} disabled={plan.refeicoes.length === 0} label="Salvar e baixar PDF" />
-                                            <Link href={`/pacientes/${patient.id}/plano`} className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-6 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus">
-                                                <Pencil className="mr-2 h-4 w-4" />
-                                                Modificar
-                                            </Link>
-                                            <Button type="button" variant="destructive" onClick={() => handleDeletePlan(plan.id)}>
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Excluir
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </article>
-                            ))}
+                                        {isExpanded && (
+                                            <div className="mt-5 space-y-5 border-t border-border-subtle pt-5">
+                                                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                                    <div className="rounded-md border border-border-default bg-background-subtle p-3">
+                                                        <p className="text-caption font-medium text-content-secondary">Kcal</p>
+                                                        <p className="mt-1 text-heading-h4 font-semibold text-content-primary">{plan.totalMacros.kcal.toFixed(0)}</p>
+                                                    </div>
+                                                    <div className="rounded-md border border-border-default bg-background-subtle p-3">
+                                                        <p className="text-caption font-medium text-content-secondary">Carboidratos</p>
+                                                        <p className="mt-1 text-heading-h4 font-semibold text-content-primary">{plan.totalMacros.cho.toFixed(1)}g</p>
+                                                    </div>
+                                                    <div className="rounded-md border border-border-default bg-background-subtle p-3">
+                                                        <p className="text-caption font-medium text-content-secondary">Proteinas</p>
+                                                        <p className="mt-1 text-heading-h4 font-semibold text-content-primary">{plan.totalMacros.ptn.toFixed(1)}g</p>
+                                                    </div>
+                                                    <div className="rounded-md border border-border-default bg-background-subtle p-3">
+                                                        <p className="text-caption font-medium text-content-secondary">Gorduras</p>
+                                                        <p className="mt-1 text-heading-h4 font-semibold text-content-primary">{plan.totalMacros.lip.toFixed(1)}g</p>
+                                                    </div>
+                                                </div>
+
+                                                <section>
+                                                    <div className="mb-3">
+                                                        <h4 className="text-heading-h4 font-semibold text-content-primary">Micronutrientes do plano</h4>
+                                                        <p className="mt-1 text-body-small text-content-secondary">
+                                                            Soma dos alimentos da opcao principal de todas as refeicoes.
+                                                        </p>
+                                                    </div>
+
+                                                    {micronutrients.length === 0 ? (
+                                                        <div className="rounded-md border border-dashed border-border-default bg-background-subtle p-6 text-center">
+                                                            <p className="text-body-small text-content-secondary">
+                                                                Nenhum micronutriente calculado para este plano.
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                                            {micronutrients.map((nutrient) => (
+                                                                <div
+                                                                    key={`${nutrient.nomeComponente}-${nutrient.unidadeUtilizada}`}
+                                                                    className="flex items-center justify-between gap-3 rounded-md border border-border-subtle bg-background-subtle px-3 py-2 text-body-small"
+                                                                >
+                                                                    <span className="truncate text-content-secondary" title={nutrient.nomeComponente}>
+                                                                        {nutrient.nomeComponente}
+                                                                    </span>
+                                                                    <span className="shrink-0 font-semibold text-content-primary">
+                                                                        {formatNutrientValue(nutrient.valorCalculado, nutrient.unidadeUtilizada)}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </section>
+                                            </div>
+                                        )}
+                                    </article>
+                                );
+                            })}
                         </div>
                     )}
                 </section>

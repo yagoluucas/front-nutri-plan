@@ -1,18 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, FileText, Plus, Search, Users } from "lucide-react";
 import Input from "@/src/components/ui/Input";
-import { useLocalStore } from "@/src/features/local-store/LocalStoreProvider";
-
-function formatDate(value?: string) {
-    if (!value) {
-        return "Nao informado";
-    }
-
-    return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${value}T00:00:00`));
-}
+import { listPatientsApi } from "@/src/features/patients/services/patient.service";
+import type { PatientSummary } from "@/src/features/patients/types/patient.types";
 
 function formatUpdatedAt(value: string) {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -25,8 +18,10 @@ function formatUpdatedAt(value: string) {
 }
 
 export default function PacientesPage() {
-    const { patients } = useLocalStore();
+    const [patients, setPatients] = useState<PatientSummary[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const filteredPatients = useMemo(() => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -41,6 +36,36 @@ export default function PacientesPage() {
             patient.email,
         ].some((value) => value?.toLowerCase().includes(normalizedSearch)));
     }, [patients, searchTerm]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        async function loadPatients() {
+            try {
+                setIsLoading(true);
+                setErrorMessage(null);
+                const loadedPatients = await listPatientsApi();
+
+                if (isActive) {
+                    setPatients(loadedPatients);
+                }
+            } catch (error) {
+                if (isActive) {
+                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar os pacientes.");
+                }
+            } finally {
+                if (isActive) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        loadPatients();
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
 
     return (
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
@@ -74,7 +99,19 @@ export default function PacientesPage() {
                 </div>
             </section>
 
-            {patients.length === 0 ? (
+            {isLoading ? (
+                <section className="rounded-lg border border-border-default bg-surface-default p-10 text-center shadow-sm">
+                    <h2 className="text-heading-h3 font-semibold text-content-primary">Carregando pacientes...</h2>
+                    <p className="mt-2 text-body-default text-content-secondary">
+                        Buscando os cadastros salvos no banco de dados.
+                    </p>
+                </section>
+            ) : errorMessage ? (
+                <section className="rounded-lg border border-feedback-error-border bg-surface-default p-10 text-center shadow-sm">
+                    <h2 className="text-heading-h3 font-semibold text-content-primary">Nao foi possivel carregar</h2>
+                    <p className="mt-2 text-body-default text-content-secondary">{errorMessage}</p>
+                </section>
+            ) : patients.length === 0 ? (
                 <section className="rounded-lg border border-dashed border-border-default bg-surface-default p-12 text-center shadow-sm">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-action-primary">
                         <Users className="h-7 w-7" />
@@ -120,12 +157,12 @@ export default function PacientesPage() {
                                         <td className="px-4 py-4">
                                             <span className="inline-flex items-center gap-2 text-content-secondary">
                                                 <CalendarDays className="h-4 w-4" />
-                                                {formatDate(patient.dataNascimento)}
+                                                Nao informado
                                             </span>
                                         </td>
                                         <td className="px-4 py-4">
                                             <span className="inline-flex items-center rounded-sm bg-feedback-info-bg px-2 py-1 text-caption font-medium text-feedback-info-text">
-                                                {patient.planosAlimentares.length} {patient.planosAlimentares.length === 1 ? "plano" : "planos"}
+                                                {patient.qtdPlanos} {patient.qtdPlanos === 1 ? "plano" : "planos"}
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 text-content-secondary">

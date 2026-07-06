@@ -10,7 +10,7 @@ import { NutritionistProfile } from "../profile/types/profile.types";
 interface LocalStoreContextValue {
     patients: Patient[];
     profile: NutritionistProfile;
-    createPatient: (values: PatientFormValues) => Patient;
+    addPatient: (patient: Patient) => void;
     updatePatient: (patientId: string, values: PatientFormValues) => void;
     deletePatient: (patientId: string) => void;
     getPatientById: (patientId: string) => Patient | undefined;
@@ -50,19 +50,11 @@ export function LocalStoreProvider({ children }: { children: ReactNode }) {
     const value = useMemo<LocalStoreContextValue>(() => ({
         patients,
         profile,
-        createPatient(values) {
-            const parsedValues = patientFormSchema.parse(values);
-            const now = new Date().toISOString();
-            const patient: Patient = {
-                ...parsedValues,
-                id: createId("patient"),
-                planosAlimentares: [],
-                createdAt: now,
-                updatedAt: now,
-            };
-
-            setPatients((currentPatients) => [patient, ...currentPatients]);
-            return patient;
+        addPatient(patient) {
+            setPatients((currentPatients) => [
+                patient,
+                ...currentPatients.filter((currentPatient) => currentPatient.id !== patient.id),
+            ]);
         },
         updatePatient(patientId, values) {
             const parsedValues = patientFormSchema.parse(values);

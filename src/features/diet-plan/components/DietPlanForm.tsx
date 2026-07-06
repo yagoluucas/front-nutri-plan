@@ -71,7 +71,7 @@ function createInitialPlan(initialPlan?: IDietPlanState | null, initialPatient?:
 
 function hasValidMeals(plan: IDietPlanState) {
     return plan.refeicoes.length > 0 && plan.refeicoes.every((meal) => (
-        meal.alimentos.length > 0 && (meal.substituicao?.alimentos.length || 0) > 0
+        meal.alimentos.length > 0
     ));
 }
 
@@ -128,7 +128,7 @@ export default function DietPlanForm({
 
     const handleSavePlan = () => {
         if (!planIsReady) {
-            toast.error("Inclua pelo menos uma refeicao com opcao principal e substituicao.");
+            toast.error("Inclua pelo menos uma refeicao com opcao principal.");
             return;
         }
 

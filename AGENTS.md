@@ -172,7 +172,11 @@ Use nomes descritivos para funções, variáveis, schemas e serviços.
 
 Evite comentários óbvios. Comente apenas decisões importantes, regras de negócio ou pontos de segurança.
 
-Interfaces devem estar presentes em um arquivo de interface/types e devem usar o zod por padrão.
+Toda interface ou contrato de dados da aplicacao deve ser construido primeiro com schema Zod no arquivo de interface/types ou schemas correspondente.
+
+Tipos TypeScript devem ser inferidos a partir dos schemas com `z.infer<typeof Schema>`. Evite criar `interface` ou `type` manual duplicando o mesmo contrato que o Zod ja descreve.
+
+Use `interface` manual apenas quando o tipo nao representar um payload validavel pelo Zod, como props de componente, contexto React, tipos genericos de bibliotecas ou adaptacoes estritamente necessarias.
 
 ## Design System
 

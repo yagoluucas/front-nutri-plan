@@ -1,21 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
-import { useLocalStore } from "@/src/features/local-store/LocalStoreProvider";
 import PatientForm from "@/src/features/patients/components/PatientForm";
 import { PatientFormValues } from "@/src/features/patients/schemas/patient.schemas";
+import { createPatientApi } from "@/src/features/patients/services/patient.service";
 
 export default function NovoPacientePage() {
     const router = useRouter();
-    const { createPatient } = useLocalStore();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (values: PatientFormValues) => {
-        const patient = createPatient(values);
-        toast.success("Paciente cadastrado nesta sessao.");
-        router.push(`/pacientes/${patient.id}`);
+    const handleSubmit = async (values: PatientFormValues) => {
+        try {
+            setIsSubmitting(true);
+            const patient = await createPatientApi(values);
+
+            toast.success("Paciente cadastrado com sucesso.");
+            router.push(`/pacientes/${patient.id}`);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Nao foi possivel cadastrar o paciente.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -36,6 +45,7 @@ export default function NovoPacientePage() {
             </header>
 
             <PatientForm
+                isSubmitting={isSubmitting}
                 submitLabel="Salvar paciente"
                 onCancel={() => router.push("/pacientes")}
                 onSubmit={handleSubmit}
@@ -43,4 +53,3 @@ export default function NovoPacientePage() {
         </div>
     );
 }
-

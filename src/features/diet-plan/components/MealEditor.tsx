@@ -9,6 +9,7 @@ import FoodSearchCombobox from "./FoodSearchCombobox";
 import { IAlimentoAutocomplete, IAlimentoDetail, IMeal, IMealFood } from "../types/dietPlan.types";
 import { getFoodDetail } from "../services/foods.service";
 import { toast } from "sonner";
+import { buildMealFood, calculateMealMacros, recalculateMealFood } from "../utils/nutritionCalculations";
 
 interface MealEditorProps {
     isOpen: boolean;
@@ -18,111 +19,6 @@ interface MealEditorProps {
 }
 
 const DEFAULT_MEAL_NAMES = ["Café da Manhã", "Lanche da Manhã", "Almoço", "Lanche da Tarde", "Jantar", "Ceia"];
-
-// Helper: recalculate all macros for a food given new measure index and quantity
-function calcMealFood(base: IMealFood, medidaIndex: number, qty: number): IMealFood {
-    const medida = base.medidasCaseiras[medidaIndex];
-    const totalGramas = qty * medida.total;
-
-    let cho = 0, ptn = 0, lip = 0, kcal = 0;
-    const nutrientesCompletos = base.nutrientesCompletos.map(n => {
-        // Back-calculate the original per-100g value from stored valorCalculado
-        // We can't do that — instead we need the original nutrientes.
-        // For edit, we reuse stored valorCalculado relative to original gramas stored.
-        // Best approach: store the original raw nutrientes as well.
-        return n; // keep as-is; full recalc only happens on initial add
-    });
-
-    // For edits, we recalculate proportionally from the existing macros per gram
-    const originalGramas = base.totalGramas;
-    if (originalGramas > 0) {
-        const ratio = totalGramas / originalGramas;
-        cho = base.macros.cho * ratio;
-        ptn = base.macros.ptn * ratio;
-        lip = base.macros.lip * ratio;
-        kcal = base.macros.kcal * ratio;
-    }
-
-    return {
-        ...base,
-        medidaSelecionada: medida,
-        quantidade: qty,
-        totalGramas,
-        macros: { cho, ptn, lip, kcal },
-        nutrientesCompletos
-    };
-}
-
-// Helper: full recalc from raw API data
-function buildMealFood(detail: IAlimentoDetail, medidaIndex: number, qty: number, id?: string): IMealFood {
-    const medida = detail.medidasCaseiras[medidaIndex];
-    const totalGramas = qty * medida.total;
-    const multiplier = totalGramas / 100;
-
-    // Build nutrientesCompletos first with per-item calculated values
-    const nutrientesCompletos = detail.nutrientes.map(n => ({
-        nomeComponente: n.nomeComponente,
-        valorCalculado: n.valorPor100G !== null ? n.valorPor100G * multiplier : 0,
-        unidadeUtilizada: n.unidadeUtilizada,
-    }));
-
-    // Use a priority-based strategy to pick EXACTLY ONE field for each macro.
-    // This avoids:
-    //   - CHO double-count: "Carboidrato disponível" + "Carboidrato total" both matching
-    //   - LIP 0.0g: "Lipídios" (i) vs "Lipídeos" (e) spelling mismatch
-    let cho: number | null = null;
-    let ptn: number | null = null;
-    let lip: number | null = null;
-    let kcal: number | null = null;
-
-    for (const nutriente of nutrientesCompletos) {
-        const name = nutriente.nomeComponente.toLowerCase().trim();
-        const unit = nutriente.unidadeUtilizada.toLowerCase().trim();
-        const val  = nutriente.valorCalculado;
-
-        // — KCAL: only "Energia" fields with kcal unit (not kJ) —
-        if (kcal === null && name.includes('energia') && unit === 'kcal') {
-            kcal = val;
-        }
-
-        // — CHO: "Carboidrato disponível" takes priority over "Carboidrato total" —
-        if (name.includes('carboidrato disponív') || name.includes('carboidrato disponiv')) {
-            cho = val; // highest priority — overwrite even if already set by total
-        } else if (cho === null && name.includes('carboidrato')) {
-            cho = val; // fallback to any carboidrato (e.g. "Carboidrato total")
-        }
-
-        // — PTN: first field that contains 'prote' —
-        if (ptn === null && (name.includes('proteína') || name.includes('proteina') || name.startsWith('prote'))) {
-            ptn = val;
-        }
-
-        // — LIP: covers 'Lipídios' (TACO) and 'Lipídeos' and 'Gordura total' —
-        if (lip === null && (
-            name.includes('lipídi') ||   // Lipídios
-            name.includes('lipídeo') ||  // Lipídeos
-            name.includes('lipidio') ||  // without accent
-            name.includes('lipideo') ||  // without accent
-            name === 'lipídios' ||
-            name === 'lipídeos' ||
-            name.includes('gordura total')
-        )) {
-            lip = val;
-        }
-    }
-
-    return {
-        id: id ?? crypto.randomUUID(),
-        codigoAlimento: detail.codigoAlimento,
-        nomeAlimento: detail.nomeAlimento,
-        medidasCaseiras: detail.medidasCaseiras,
-        medidaSelecionada: medida,
-        quantidade: qty,
-        totalGramas,
-        macros: { cho: cho ?? 0, ptn: ptn ?? 0, lip: lip ?? 0, kcal: kcal ?? 0 },
-        nutrientesCompletos
-    };
-}
 
 export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: MealEditorProps) {
     const [nome, setNome] = useState(existingMeal?.nome || "");
@@ -222,21 +118,8 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
         if (!nome.trim()) { toast.error("Informe o nome da refeição."); return; }
         if (!horario) { toast.error("Informe o horário da refeição."); return; }
         if (alimentos.length === 0) { toast.error("Adicione pelo menos um alimento na opcao principal."); return; }
-        if (substituicaoAlimentos.length === 0) { toast.error("Adicione pelo menos um alimento na substituicao."); return; }
-
-        const totalMacros = alimentos.reduce((acc, a) => ({
-            cho: acc.cho + a.macros.cho,
-            ptn: acc.ptn + a.macros.ptn,
-            lip: acc.lip + a.macros.lip,
-            kcal: acc.kcal + a.macros.kcal,
-        }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
-
-        const substituicaoTotalMacros = substituicaoAlimentos.reduce((acc, a) => ({
-            cho: acc.cho + a.macros.cho,
-            ptn: acc.ptn + a.macros.ptn,
-            lip: acc.lip + a.macros.lip,
-            kcal: acc.kcal + a.macros.kcal,
-        }), { cho: 0, ptn: 0, lip: 0, kcal: 0 });
+        const totalMacros = calculateMealMacros(alimentos);
+        const substituicaoTotalMacros = calculateMealMacros(substituicaoAlimentos);
 
         const meal: IMeal = {
             id: existingMeal?.id ?? crypto.randomUUID(),
@@ -245,13 +128,13 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
             observacoes,
             alimentos,
             totalMacros,
-            substituicao: {
+            substituicao: substituicaoAlimentos.length > 0 ? {
                 id: existingMeal?.substituicao?.id ?? crypto.randomUUID(),
                 titulo: "Substituicao",
                 observacoes: substituicaoObservacoes,
                 alimentos: substituicaoAlimentos,
                 totalMacros: substituicaoTotalMacros,
-            },
+            } : undefined,
         };
 
         onSave(meal);
@@ -536,7 +419,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
     const handleSaveEdit = () => {
         const qty = parseFloat(editQty);
         if (isNaN(qty) || qty <= 0) return;
-        const updated = calcMealFood(food, editMedidaIndex, qty);
+        const updated = recalculateMealFood(food, editMedidaIndex, qty);
         onUpdate(updated);
         setIsEditing(false);
     };

@@ -46,6 +46,7 @@ export interface IMealFood {
         valorCalculado: number;
         unidadeUtilizada: string;
     }[];
+    nutrientesOriginais?: INutriente[];
 }
 
 export interface IMacroTotals {
@@ -53,6 +54,12 @@ export interface IMacroTotals {
     ptn: number;
     lip: number;
     kcal: number;
+}
+
+export interface INutrientTotal {
+    nomeComponente: string;
+    unidadeUtilizada: string;
+    valorCalculado: number;
 }
 
 export interface IMealOption {
