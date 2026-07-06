@@ -23,6 +23,9 @@ const LocalStoreContext = createContext<LocalStoreContextValue | null>(null);
 
 const defaultProfile: NutritionistProfile = {
     nome: "",
+    sobrenome: "",
+    email: "",
+    dataNascimento: "",
     profissao: "Nutricionista",
     crn: "",
 };

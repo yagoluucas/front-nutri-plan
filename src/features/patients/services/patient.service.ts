@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { patientFormSchema, type PatientFormValues } from "../schemas/patient.schemas";
 import type { DietPlanRecord, Patient, PatientSummary } from "../types/patient.types";
+import { hydrateBackendPlan } from "../../diet-plan/services/dietPlan.service";
 
 const apiPatientSummarySchema = z.object({
     id: z.string().trim().min(1),
@@ -17,7 +18,16 @@ const apiMealSchema = z.object({
     nome: z.string(),
     horario: z.string(),
     observacoes: z.string().optional(),
-    alimentos: z.array(z.unknown()).default([]),
+    alimentos: z.array(z.object({
+        codigoAlimento: z.string(),
+        quantidade: z.number(),
+        medidaSelecionada: z.object({
+            nomeMedida: z.string(),
+            total: z.number(),
+            unidadeMedida: z.string(),
+            tipoMedida: z.enum(["Caseira", "Tecnica"]),
+        }),
+    })).default([]),
 }).passthrough();
 
 const apiDietPlanSchema = z.object({
@@ -77,51 +87,36 @@ async function requestPatientApi(endpoint: string, init?: RequestInit): Promise<
     return payload;
 }
 
-function emptyMacros() {
-    return {
-        cho: 0,
-        ptn: 0,
-        lip: 0,
-        kcal: 0,
-    };
-}
-
-function toDietPlanRecord(
+async function toDietPlanRecord(
     plan: z.infer<typeof apiDietPlanSchema>,
     patient: z.infer<typeof apiPatientSchema>,
     index: number,
-): DietPlanRecord {
+): Promise<DietPlanRecord> {
     const now = new Date().toISOString();
     const planId = plan.id || `${patient.id}-plano-${index}`;
+    const hydratedPlan = await hydrateBackendPlan({
+        ...plan,
+        id: planId,
+    }, {
+        nome: `${patient.nome} ${patient.sobrenome}`.trim(),
+        email: patient.email || "",
+        dataNascimento: patient.dataNascimento || "",
+    });
 
     return {
+        ...hydratedPlan,
         id: planId,
-        titulo: "Plano alimentar",
-        objetivoDoPlano: plan.objetivoDoPlano || "",
-        orientacoesGerais: plan.observacoesGerais || "",
-        paciente: {
-            nome: `${patient.nome} ${patient.sobrenome}`.trim(),
-            email: patient.email || "",
-            dataNascimento: patient.dataNascimento || "",
-        },
-        refeicoes: plan.refeicoes.map((meal, index) => ({
-            id: `${planId}-refeicao-${index}`,
-            nome: meal.nome,
-            horario: meal.horario,
-            observacoes: meal.observacoes || "",
-            alimentos: [],
-            totalMacros: emptyMacros(),
-        })),
-        totalMacros: emptyMacros(),
         createdAt: now,
         updatedAt: now,
     };
 }
 
-function toPatient(patient: z.infer<typeof apiPatientSchema>): Patient {
+async function toPatient(patient: z.infer<typeof apiPatientSchema>): Promise<Patient> {
     return {
         ...patient,
-        planosAlimentares: (patient.planosAlimentares ?? []).map((plan, index) => toDietPlanRecord(plan, patient, index)),
+        planosAlimentares: await Promise.all(
+            (patient.planosAlimentares ?? []).map((plan, index) => toDietPlanRecord(plan, patient, index)),
+        ),
     };
 }
 

@@ -3,7 +3,10 @@ import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
 
 export const AUTH_API_URL =
   process.env.API_URL ||
-  "https://api-nutri-plan.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://api-nutri-plan.onrender.com"
+    : "http://localhost:5000");
 
 const TOKEN_KEYS = new Set(["token", "accesstoken", "access_token", "jwt"]);
 

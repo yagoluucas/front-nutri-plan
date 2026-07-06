@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, Upload } from "lucide-react";
@@ -13,7 +13,7 @@ import { NutritionistProfile } from "../types/profile.types";
 
 interface ProfileFormProps {
     profile: NutritionistProfile;
-    onSubmit: (values: ProfileFormValues, fotoPerfil?: string) => void;
+    onSubmit: (values: ProfileFormValues, imagemPerfil?: string) => void | Promise<void>;
 }
 
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -32,21 +32,35 @@ function getInitials(name: string) {
 }
 
 export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
-    const [preview, setPreview] = useState(profile.fotoPerfil);
+    const [selectedImage, setSelectedImage] = useState<string | undefined>();
     const [imageError, setImageError] = useState<string | null>(null);
+    const preview = selectedImage ?? profile.imagemPerfil ?? profile.fotoPerfil;
     const {
         register,
         handleSubmit,
+        reset,
         formState: { errors, isSubmitting },
     } = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
         defaultValues: {
             nome: profile.nome,
-            profissao: profile.profissao,
+            sobrenome: profile.sobrenome,
+            email: profile.email,
+            dataNascimento: profile.dataNascimento,
             crn: profile.crn,
         },
     });
-    const initials = getInitials(profile.nome);
+    const initials = getInitials(`${profile.nome} ${profile.sobrenome}`);
+
+    useEffect(() => {
+        reset({
+            nome: profile.nome,
+            sobrenome: profile.sobrenome,
+            email: profile.email,
+            dataNascimento: profile.dataNascimento,
+            crn: profile.crn,
+        });
+    }, [profile, reset]);
 
     const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -71,14 +85,15 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
         const reader = new FileReader();
         reader.onload = () => {
             if (typeof reader.result === "string") {
-                setPreview(reader.result);
+                setSelectedImage(reader.result);
             }
         };
         reader.readAsDataURL(file);
     };
 
-    const submitProfile = (values: ProfileFormValues) => {
-        onSubmit(values, preview);
+    const submitProfile = async (values: ProfileFormValues) => {
+        await onSubmit(values, preview);
+        setSelectedImage(undefined);
     };
 
     return (
@@ -119,7 +134,7 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
                     </span>
                     <div>
                         <h2 className="text-heading-h3 font-semibold text-content-primary">Dados profissionais</h2>
-                        <p className="text-body-small text-content-secondary">Esses dados aparecem no PDF do plano alimentar.</p>
+                    <p className="text-body-small text-content-secondary">Esses dados aparecem no PDF do plano alimentar.</p>
                     </div>
                 </div>
 
@@ -136,13 +151,13 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="profile_profissao">Profissao</Label>
+                        <Label htmlFor="profile_sobrenome">Sobrenome</Label>
                         <Input
-                            id="profile_profissao"
+                            id="profile_sobrenome"
                             type="text"
-                            placeholder="Nutricionista"
-                            {...register("profissao")}
-                            error={errors.profissao?.message}
+                            placeholder="Seu sobrenome"
+                            {...register("sobrenome")}
+                            error={errors.sobrenome?.message}
                         />
                     </div>
 
@@ -154,6 +169,27 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
                             placeholder="CRN 00000"
                             {...register("crn")}
                             error={errors.crn?.message}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="profile_email">E-mail</Label>
+                        <Input
+                            id="profile_email"
+                            type="email"
+                            placeholder="seu@email.com"
+                            {...register("email")}
+                            error={errors.email?.message}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="profile_dataNascimento">Data de nascimento</Label>
+                        <Input
+                            id="profile_dataNascimento"
+                            type="date"
+                            {...register("dataNascimento")}
+                            error={errors.dataNascimento?.message}
                         />
                     </div>
                 </div>

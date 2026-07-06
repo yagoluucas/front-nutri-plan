@@ -7,6 +7,7 @@ import Button from "@/src/components/ui/Button";
 import DietPlanForm from "@/src/features/diet-plan/components/DietPlanForm";
 import { IDietPlanState, IPatientData } from "@/src/features/diet-plan/types/dietPlan.types";
 import { useLocalStore } from "@/src/features/local-store/LocalStoreProvider";
+import { saveDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
 import { getPatientApi } from "@/src/features/patients/services/patient.service";
 import type { Patient } from "@/src/features/patients/types/patient.types";
 
@@ -27,23 +28,23 @@ export default function PacientePlanoPage() {
     const params = useParams();
     const router = useRouter();
     const patientId = typeof params.id === "string" ? params.id : "";
-    const { profile, upsertDietPlan } = useLocalStore();
+    const { profile } = useLocalStore();
     const [patient, setPatient] = useState<Patient | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const existingPlan = patient?.planosAlimentares[0];
 
-    const handleSavePlan = (plan: IDietPlanState) => {
+    const handleSavePlan = async (plan: IDietPlanState) => {
         if (!patient) {
             toast.error("Paciente nao encontrado.");
             return;
         }
 
-        upsertDietPlan(patient.id, {
+        await saveDietPlanApi(patient.id, {
             ...plan,
             id: existingPlan?.id || plan.id,
         });
-        toast.success("Plano salvo nesta sessao.");
+        toast.success("Plano salvo com sucesso.");
         router.push(`/pacientes/${patient.id}`);
     };
 

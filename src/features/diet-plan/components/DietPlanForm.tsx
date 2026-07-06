@@ -36,7 +36,7 @@ interface DietPlanFormProps {
     initialPatient?: Partial<IPatientData>;
     profile?: NutritionistProfile;
     backHref?: string;
-    onSavePlan?: (plan: IDietPlanState) => void;
+    onSavePlan?: (plan: IDietPlanState) => void | Promise<void>;
 }
 
 function recalcTotals(refeicoes: IMeal[]) {
@@ -86,6 +86,7 @@ export default function DietPlanForm({
     const [planState, setPlanState] = useState<IDietPlanState>(() => createInitialPlan(initialPlan, initialPatient));
     const [isMealEditorOpen, setIsMealEditorOpen] = useState(false);
     const [editingMeal, setEditingMeal] = useState<IMeal | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const planIsReady = hasValidMeals(planState);
 
 
@@ -126,14 +127,21 @@ export default function DietPlanForm({
         setIsMealEditorOpen(true);
     };
 
-    const handleSavePlan = () => {
+    const handleSavePlan = async () => {
         if (!planIsReady) {
             toast.error("Inclua pelo menos uma refeicao com opcao principal.");
             return;
         }
 
         if (onSavePlan) {
-            onSavePlan(planState);
+            try {
+                setIsSaving(true);
+                await onSavePlan(planState);
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Nao foi possivel salvar o plano.");
+            } finally {
+                setIsSaving(false);
+            }
             return;
         }
 
@@ -299,10 +307,10 @@ export default function DietPlanForm({
             {/* Bottom Actions Bar */}
             <div className="sticky bottom-0 z-40 rounded-lg border border-border-default bg-surface-default/95 p-4 shadow-md backdrop-blur-md">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-end items-center gap-4">
-                    <PDFGenerator data={planState} profile={profile} disabled={!planIsReady} />
-                    <Button variant="primary" onClick={handleSavePlan} disabled={!planIsReady} className="w-full sm:w-auto">
+                    <PDFGenerator data={planState} profile={profile} disabled={!planIsReady || isSaving} />
+                    <Button variant="primary" onClick={handleSavePlan} disabled={!planIsReady || isSaving} className="w-full sm:w-auto">
                         <Save size={18} className="mr-2" />
-                        Salvar Plano
+                        {isSaving ? "Salvando..." : "Salvar Plano"}
                     </Button>
                 </div>
             </div>
