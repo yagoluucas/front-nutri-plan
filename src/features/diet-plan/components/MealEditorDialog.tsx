@@ -560,7 +560,7 @@ export default function MealEditorDialog({
               Cancelar
             </Button>
             <Button variant="primary" onClick={handleSaveMeal}>
-              {existingMeal ? "Salvar EdiÃ§Ã£o" : "Salvar refeição"}
+              {existingMeal ? "Salvar Edição" : "Salvar refeição"}
             </Button>
           </div>
         </div>

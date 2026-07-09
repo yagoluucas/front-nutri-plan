@@ -189,10 +189,10 @@ function sanitizeFileName(value?: string) {
 }
 
 function splitTextLines(value?: string) {
-  return (value || "")
+  if (!value || !value.trim()) return [];
+  return value
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+    .map((line) => line.trim() || "\u00A0");
 }
 
 // PDF Document Component
