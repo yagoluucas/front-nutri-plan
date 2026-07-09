@@ -1,5 +1,6 @@
 import {
     IAlimentoDetail,
+    IMedidaCaseira,
     IMeal,
     IMealFood,
     IMacroTotals,
@@ -25,6 +26,32 @@ function calculateNutrients(nutrients: INutriente[], totalGramas: number): INutr
         valorCalculado: nutrient.valorPor100G !== null ? nutrient.valorPor100G * multiplier : 0,
         unidadeUtilizada: nutrient.unidadeUtilizada,
     }));
+}
+
+export function convertMeasureToGrams(measure: IMedidaCaseira, quantity: number) {
+    const normalizedUnit = normalizeText(measure.unidadeMedida);
+    const normalizedName = normalizeText(measure.nomeMedida);
+    const baseTotal = quantity * measure.total;
+
+    if (
+        normalizedUnit === "kg" ||
+        normalizedUnit === "quilograma" ||
+        normalizedUnit === "quilogramas" ||
+        normalizedName.includes("quilo") ||
+        normalizedName.includes("quilograma")
+    ) {
+        return baseTotal * 1000;
+    }
+
+    if (
+        normalizedUnit === "mg" ||
+        normalizedUnit === "miligrama" ||
+        normalizedUnit === "miligramas"
+    ) {
+        return baseTotal / 1000;
+    }
+
+    return baseTotal;
 }
 
 function extractMacros(nutrients: INutrientTotal[]): IMacroTotals {
@@ -76,7 +103,7 @@ export function buildMealFood(
     id?: string,
 ): IMealFood {
     const medida = detail.medidasCaseiras[medidaIndex];
-    const totalGramas = quantity * medida.total;
+    const totalGramas = convertMeasureToGrams(medida, quantity);
     const nutrientesCompletos = calculateNutrients(detail.nutrientes, totalGramas);
 
     return {
@@ -95,7 +122,7 @@ export function buildMealFood(
 
 export function recalculateMealFood(base: IMealFood, medidaIndex: number, quantity: number): IMealFood {
     const medida = base.medidasCaseiras[medidaIndex];
-    const totalGramas = quantity * medida.total;
+    const totalGramas = convertMeasureToGrams(medida, quantity);
 
     if (base.nutrientesOriginais?.length) {
         const nutrientesCompletos = calculateNutrients(base.nutrientesOriginais, totalGramas);

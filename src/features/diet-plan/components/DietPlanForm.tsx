@@ -9,9 +9,8 @@ import Label from "@/src/components/ui/Label";
 import { toast } from "sonner";
 import { IDietPlanState, IMeal, IMacroTotals, IPatientData } from "../types/dietPlan.types";
 import { NutritionistProfile } from "../../profile/types/profile.types";
-import PatientInfoSection from "./PatientInfoSection";
-import DietPlanDashboard from "./DietPlanDashboard";
-import MealEditor from "./MealEditor";
+import DietPlanSummary from "./DietPlanSummary";
+import MealEditorDialog from "./MealEditorDialog";
 import PDFGenerator from "./PDFGenerator";
 
 const EMPTY_TOTALS: IMacroTotals = { cho: 0, ptn: 0, lip: 0, kcal: 0 };
@@ -202,15 +201,10 @@ export default function DietPlanForm({
                 </div>
             </section>
             
-            {/* Patient Info (read-only) + Dashboard */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-                <div className="lg:col-span-2">
-                    <PatientInfoSection data={planState.paciente} />
-                </div>
-                <div className="lg:col-span-1">
-                    <DietPlanDashboard totalMacros={planState.totalMacros} />
-                </div>
-            </div>
+            <DietPlanSummary
+                totalMacros={planState.totalMacros}
+                meals={planState.refeicoes}
+            />
 
             {/* Meals Area */}
             <div className="space-y-6">
@@ -276,13 +270,15 @@ export default function DietPlanForm({
 
                                 {/* FIX #4: Edit + Remove buttons on meal cards */}
                                 <div className="mt-auto flex justify-between items-center pt-3 border-t border-border-subtle">
-                                    <button 
+                                    <button
+                                        type="button"
                                         className="text-body-small text-feedback-error-text font-medium hover:underline"
                                         onClick={() => handleRemoveMeal(meal.id)}
                                     >
                                         Remover
                                     </button>
-                                    <button 
+                                    <button
+                                        type="button"
                                         className="text-body-small text-brand-700 font-semibold hover:text-brand-900 flex items-center gap-1 transition-colors"
                                         onClick={() => handleOpenEdit(meal)}
                                     >
@@ -294,6 +290,7 @@ export default function DietPlanForm({
 
                         {/* Add new meal card button */}
                         <button
+                            type="button"
                             onClick={handleOpenNew}
                             className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-[200px]"
                         >
@@ -317,7 +314,7 @@ export default function DietPlanForm({
 
             {/* Meal Editor Modal */}
             {isMealEditorOpen && (
-                <MealEditor
+                <MealEditorDialog
                     key={editingMeal?.id || "new-meal"}
                     isOpen={isMealEditorOpen}
                     onClose={() => { setIsMealEditorOpen(false); setEditingMeal(null); }}

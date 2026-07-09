@@ -321,7 +321,7 @@ export default function PacienteDetalhePage() {
                           profile={profile}
                           disabled={plan.refeicoes.length === 0}
                           label="Baixar Plano"
-                          buttonClassName="px-4"
+                          buttonClassName="px-4 w-full"
                         />
                         <Link
                           href={`/pacientes/${patient.id}/plano`}

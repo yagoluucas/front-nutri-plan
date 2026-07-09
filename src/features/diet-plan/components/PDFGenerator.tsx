@@ -346,7 +346,7 @@ export default function PDFGenerator({
 
   if (!isClient) {
     return (
-      <Button disabled={true} className={`w-full ${buttonClassName}`.trim()}>
+      <Button disabled={true} className={`${buttonClassName}`.trim()}>
         <Download size={18} className="mr-2" />
         {label}
       </Button>
@@ -357,13 +357,13 @@ export default function PDFGenerator({
     <PDFDownloadLink
       document={<DietPlanDocument data={data} profile={profile} />}
       fileName={`plano_${sanitizeFileName(data.paciente.nome)}.pdf`}
-      className="w-full"
+      className=""
     >
       {({ loading }) => (
         <Button
           variant="primary"
           disabled={disabled || loading}
-          className={`w-full ${buttonClassName}`.trim()}
+          className={`${buttonClassName}`.trim()}
         >
           <Download size={18} className="mr-2" />
           {loading ? "Gerando..." : label}

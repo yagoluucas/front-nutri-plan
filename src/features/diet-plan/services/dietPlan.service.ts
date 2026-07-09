@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { buildMealFood, calculateMealMacros } from "../utils/nutritionCalculations";
+import { buildMealFood, calculateMealMacros, convertMeasureToGrams } from "../utils/nutritionCalculations";
 import { getFoodDetail } from "./foods.service";
 import type { IDietPlanState, IMeal, IMealFood, IMedidaCaseira, IPatientData } from "../types/dietPlan.types";
 
@@ -115,7 +115,7 @@ function fallbackFood(food: z.infer<typeof backendFoodSchema>): IMealFood {
         medidasCaseiras: [food.medidaSelecionada],
         medidaSelecionada: food.medidaSelecionada,
         quantidade: food.quantidade,
-        totalGramas: food.quantidade * food.medidaSelecionada.total,
+        totalGramas: convertMeasureToGrams(food.medidaSelecionada, food.quantidade),
         macros: { cho: 0, ptn: 0, lip: 0, kcal: 0 },
         nutrientesCompletos: [],
     };
