@@ -6,6 +6,7 @@ import { AlertTriangle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import { LOGIN_ROUTE } from "@/src/features/auth/constants";
+import { useProfile } from "@/src/features/profile/ProfileProvider";
 import ProfileForm from "@/src/features/profile/components/ProfileForm";
 import { ProfileFormValues } from "@/src/features/profile/schemas/profile.schemas";
 import { deleteProfileApi, getProfileApi, updateProfileApi } from "@/src/features/profile/services/profile.service";
@@ -13,6 +14,7 @@ import type { NutritionistProfile } from "@/src/features/profile/types/profile.t
 
 export default function MeuPerfilPage() {
     const router = useRouter();
+    const { syncProfile } = useProfile();
     const [profile, setProfile] = useState<NutritionistProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -30,6 +32,7 @@ export default function MeuPerfilPage() {
 
                 if (isActive) {
                     setProfile(loadedProfile);
+                    syncProfile(loadedProfile);
                 }
             } catch (error) {
                 if (isActive) {
@@ -47,12 +50,13 @@ export default function MeuPerfilPage() {
         return () => {
             isActive = false;
         };
-    }, []);
+    }, [syncProfile]);
 
     const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string) => {
         try {
             const updatedProfile = await updateProfileApi(values, imagemPerfil);
             setProfile(updatedProfile);
+            syncProfile(updatedProfile);
             toast.success("Perfil atualizado com sucesso.");
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Nao foi possivel atualizar o perfil.");

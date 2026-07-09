@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Leaf, User, Users } from "lucide-react";
 import LogoutButton from "@/src/features/auth/components/LogoutButton";
+import { useProfile } from "@/src/features/profile/ProfileProvider";
 
 const navigationItems = [
     { href: "/dashboard", label: "Inicio", icon: BarChart3 },
@@ -15,9 +17,18 @@ const navigationItems = [
 export default function AppSidebar() {
     const pathname = usePathname();
     const [isExpanded, setIsExpanded] = useState(true);
+    const { profile } = useProfile();
     const labelTransitionClass = isExpanded
         ? "max-w-40 translate-x-0 opacity-100"
         : "max-w-0 -translate-x-1 opacity-0";
+    const profileImage = profile.fotoPerfil ?? profile.imagemPerfil;
+    const profileLabel = [profile.nome, profile.sobrenome].filter(Boolean).join(" ").trim() || "Nutricionista";
+    const profileInitials = (profileLabel || "NP")
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((item) => item[0])
+        .join("")
+        .toUpperCase();
 
     return (
         <aside
@@ -81,14 +92,24 @@ export default function AppSidebar() {
                 <div className="shrink-0 border-t border-border-subtle p-3">
                     <div className="mb-3 flex h-14 items-center gap-3 overflow-hidden rounded-md bg-background-subtle px-3">
                         <span className="flex w-8 shrink-0 justify-center">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-body-small font-bold text-action-primary">
-                                NP
-                            </span>
+                            {profileImage ? (
+                                <Image
+                                    src={profileImage}
+                                    alt="Foto de perfil"
+                                    width={32}
+                                    height={32}
+                                    className="h-8 w-8 rounded-full object-cover"
+                                />
+                            ) : (
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-body-small font-bold text-action-primary">
+                                    {profileInitials}
+                                </span>
+                            )}
                         </span>
                         <span
                             className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out ${labelTransitionClass}`}
                         >
-                            Nutricionista
+                            {profileLabel}
                         </span>
                     </div>
 

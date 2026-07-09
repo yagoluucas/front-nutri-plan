@@ -208,9 +208,12 @@ const DietPlanDocument = ({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          {profile?.fotoPerfil ? (
+          {profile?.fotoPerfil || profile?.imagemPerfil ? (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image src={profile.fotoPerfil} style={styles.profileImage} />
+            <Image
+              src={profile.fotoPerfil || profile.imagemPerfil || ""}
+              style={styles.profileImage}
+            />
           ) : (
             <View style={styles.profileFallback}>
               <Text style={styles.profileInitials}>

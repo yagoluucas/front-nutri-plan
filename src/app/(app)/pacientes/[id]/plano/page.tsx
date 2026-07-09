@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import DietPlanForm from "@/src/features/diet-plan/components/DietPlanForm";
 import { IDietPlanState, IPatientData } from "@/src/features/diet-plan/types/dietPlan.types";
-import { useLocalStore } from "@/src/features/local-store/LocalStoreProvider";
 import { saveDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
 import { getPatientApi } from "@/src/features/patients/services/patient.service";
+import { useProfile } from "@/src/features/profile/ProfileProvider";
 import type { Patient } from "@/src/features/patients/types/patient.types";
 
 function mapPatientToDietPlanPatient(patient: {
@@ -28,7 +28,7 @@ export default function PacientePlanoPage() {
     const params = useParams();
     const router = useRouter();
     const patientId = typeof params.id === "string" ? params.id : "";
-    const { profile } = useLocalStore();
+    const { profile } = useProfile();
     const [patient, setPatient] = useState<Patient | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
