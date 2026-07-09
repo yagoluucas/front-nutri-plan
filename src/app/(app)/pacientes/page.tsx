@@ -135,7 +135,7 @@ export default function PacientesPage() {
             ) : (
                 <section className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-sm">
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left text-body-small">
+                        <table className="w-full min-w-190 text-left text-body-small">
                             <thead className="bg-surface-muted text-content-secondary">
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Paciente</th>
