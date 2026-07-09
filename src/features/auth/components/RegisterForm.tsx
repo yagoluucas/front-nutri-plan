@@ -87,7 +87,7 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
                         <Input
                             id="crn"
                             type="text"
-                            placeholder="00000000"
+                            placeholder="00000"
                             {...register("crn")}
                             error={errors.crn?.message}
                         />

@@ -23,7 +23,7 @@ export const profileFormSchema = z.object({
     sobrenome: z.string().trim().min(2, "Informe seu sobrenome.").max(50, "Sobrenome muito longo."),
     email: z.string().trim().toLowerCase().email("E-mail invalido.").min(5).max(100),
     dataNascimento: profileFormBirthDateSchema,
-    crn: z.string().trim().min(8, "O CRN deve ter no minimo 8 caracteres.").max(15, "O CRN deve ter no maximo 15 caracteres."),
+    crn: z.string().trim().min(5, "O CRN deve ter no minimo 5 caracteres.").max(15, "O CRN deve ter no maximo 15 caracteres."),
 }).strict();
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;

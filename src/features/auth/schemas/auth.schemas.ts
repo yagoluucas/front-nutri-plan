@@ -14,7 +14,7 @@ export const registerSchema = z.object({
     dataNascimento: z.coerce.date({ error: "A data de nascimento é obrigatória" })
         .max(new Date(), "A data de nascimento não pode estar no futuro")
         .max(new Date(new Date().getFullYear() - 15, new Date().getMonth(), new Date().getDate()), "Você precisa ter no mínimo 15 anos para se cadastrar"),
-    crn: z.string().trim().min(8, "O CRN deve ter no mínimo 8 caracteres").max(15, "O CRN deve ter no máximo 15 caracteres"),
+    crn: z.string().trim().min(5, "O CRN deve ter no mínimo 5 caracteres").max(15, "O CRN deve ter no máximo 15 caracteres"),
     senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").max(20, "Senha deve ter no máximo 20 caracteres"),
     confirmacaoSenha: z.string().min(8, "A confirmação da senha é obrigatória")
 }).refine((data) => data.senha === data.confirmacaoSenha, {
