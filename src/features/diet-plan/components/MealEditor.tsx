@@ -145,7 +145,7 @@ export default function MealEditor({ isOpen, onClose, onSave, existingMeal }: Me
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             {/* Cancel Confirmation */}
             {showCancelConfirm && (
-                <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60">
+                <div className="absolute inset-0 z-60 flex items-center justify-center bg-black/60">
                     <div className="bg-surface-default p-6 rounded-xl max-w-sm w-full shadow-lg">
                         <h3 className="text-heading-h4 font-bold text-content-primary mb-2">Deseja realmente cancelar?</h3>
                         <p className="text-body-default text-content-secondary mb-6">Todos os dados desta refeição serão perdidos.</p>

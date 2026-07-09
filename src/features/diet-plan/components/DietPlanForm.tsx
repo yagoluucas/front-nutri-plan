@@ -292,7 +292,7 @@ export default function DietPlanForm({
                         <button
                             type="button"
                             onClick={handleOpenNew}
-                            className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-[200px]"
+                            className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-50"
                         >
                             <Plus size={32} className="mb-2" />
                             <span className="font-semibold text-body-large">Nova Refeição</span>
