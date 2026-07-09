@@ -245,7 +245,7 @@ const DietPlanDocument = ({
 
       {splitTextLines(data.orientacoesGerais).length > 0 && (
         <View style={styles.orientationBox}>
-          <Text style={styles.sectionTitle}>Orientacoes gerais</Text>
+          <Text style={styles.sectionTitle}>Orientações gerais</Text>
           {splitTextLines(data.orientacoesGerais).map((line, index) => (
             <Text key={`${line}-${index}`} style={styles.orientationText}>
               {line}

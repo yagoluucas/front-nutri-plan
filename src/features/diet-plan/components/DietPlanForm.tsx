@@ -188,7 +188,7 @@ export default function DietPlanForm({
                     </div>
 
                     <div className="space-y-2 lg:col-span-2">
-                        <Label htmlFor="plan_orientacoes">Orientacoes gerais</Label>
+                        <Label htmlFor="plan_orientacoes">Orientações gerais</Label>
                         <textarea
                             id="plan_orientacoes"
                             rows={4}
