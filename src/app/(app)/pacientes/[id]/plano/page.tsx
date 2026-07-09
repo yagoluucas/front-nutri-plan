@@ -42,10 +42,16 @@ export default function PacientePlanoPage() {
             return;
         }
 
-        await saveDietPlanApi(patient.id, {
-            ...plan,
-            id: existingPlan?.id || plan.id,
-        });
+        if (planId && !existingPlan) {
+            toast.error("Plano alimentar nao encontrado para edicao.");
+            return;
+        }
+
+        const planToSave = existingPlan
+            ? { ...plan, id: existingPlan.id }
+            : { ...plan, id: undefined };
+
+        await saveDietPlanApi(patient.id, planToSave);
         toast.success("Plano salvo com sucesso.");
         router.push(`/pacientes/${patient.id}`);
     };
@@ -105,6 +111,22 @@ export default function PacientePlanoPage() {
                     </p>
                     <Button type="button" variant="primary" className="mt-6" onClick={() => router.push("/pacientes")}>
                         Ver pacientes
+                    </Button>
+                </section>
+            </div>
+        );
+    }
+
+    if (planId && !existingPlan) {
+        return (
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+                <section className="rounded-lg border border-border-default bg-surface-default p-10 text-center shadow-sm">
+                    <h1 className="text-heading-h2 font-bold text-content-primary">Plano alimentar nao encontrado</h1>
+                    <p className="mt-2 text-body-default text-content-secondary">
+                        O identificador do plano informado na URL nao corresponde a um plano salvo para este paciente.
+                    </p>
+                    <Button type="button" variant="primary" className="mt-6" onClick={() => router.push(`/pacientes/${patient.id}`)}>
+                        Voltar para o paciente
                     </Button>
                 </section>
             </div>

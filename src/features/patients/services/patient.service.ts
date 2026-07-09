@@ -37,6 +37,10 @@ const apiDietPlanSchema = z.object({
     refeicoes: z.array(apiMealSchema).default([]),
 }).passthrough();
 
+const apiDietPlanWithIdSchema = apiDietPlanSchema.extend({
+    id: z.string().trim().min(1),
+});
+
 const apiPatientSchema = patientFormSchema.extend({
     id: z.string().trim().min(1),
     idNutricionista: z.string().trim().min(1),
@@ -52,6 +56,14 @@ const listPatientsResponseSchema = z.object({
 const patientResponseSchema = z.object({
     paciente: apiPatientSchema,
 }).passthrough();
+
+const dietPlansResponseSchema = z.object({
+    planosAlimentares: z.array(apiDietPlanWithIdSchema),
+}).passthrough();
+
+type ApiPatient = z.infer<typeof apiPatientSchema>;
+type ApiDietPlan = z.infer<typeof apiDietPlanSchema>;
+type ApiDietPlanWithId = z.infer<typeof apiDietPlanWithIdSchema>;
 
 function getPayloadMessage(payload: unknown, fallback: string) {
     if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
@@ -87,36 +99,59 @@ async function requestPatientApi(endpoint: string, init?: RequestInit): Promise<
     return payload;
 }
 
-async function toDietPlanRecord(
-    plan: z.infer<typeof apiDietPlanSchema>,
-    patient: z.infer<typeof apiPatientSchema>,
-    index: number,
-): Promise<DietPlanRecord> {
-    const now = new Date().toISOString();
-    const planId = plan.id || `${patient.id}-plano-${index}`;
-    const hydratedPlan = await hydrateBackendPlan({
-        ...plan,
-        id: planId,
-    }, {
+function getPatientDietPlanPatientData(patient: ApiPatient) {
+    return {
         nome: `${patient.nome} ${patient.sobrenome}`.trim(),
         email: patient.email || "",
         dataNascimento: patient.dataNascimento || "",
-    });
+    };
+}
+
+function hasDietPlanId(plan: ApiDietPlan): plan is ApiDietPlanWithId {
+    return typeof plan.id === "string" && plan.id.trim().length > 0;
+}
+
+async function toDietPlanRecord(
+    plan: ApiDietPlanWithId,
+    patient: ApiPatient,
+): Promise<DietPlanRecord> {
+    const now = new Date().toISOString();
+    const hydratedPlan = await hydrateBackendPlan(plan, getPatientDietPlanPatientData(patient));
 
     return {
         ...hydratedPlan,
-        id: planId,
+        id: plan.id,
         createdAt: now,
         updatedAt: now,
     };
 }
 
-async function toPatient(patient: z.infer<typeof apiPatientSchema>): Promise<Patient> {
+async function fetchPatientDietPlans(patient: ApiPatient): Promise<DietPlanRecord[]> {
+    const payload = await requestPatientApi(`/api/pacientes/${encodeURIComponent(patient.id)}/planos-alimentares`, {
+        method: "GET",
+    });
+    const parsedResponse = dietPlansResponseSchema.safeParse(payload);
+
+    if (!parsedResponse.success) {
+        throw new Error("Resposta invalida ao buscar planos alimentares do paciente.");
+    }
+
+    return Promise.all(
+        parsedResponse.data.planosAlimentares.map((plan) => toDietPlanRecord(plan, patient)),
+    );
+}
+
+async function toPatient(patient: ApiPatient): Promise<Patient> {
+    const patientPlans = patient.planosAlimentares ?? [];
+    const planosAlimentares = patientPlans.length === 0
+        ? []
+        : patientPlans.every(hasDietPlanId)
+            ? await Promise.all(patientPlans.map((plan) => toDietPlanRecord(plan, patient)))
+            : await fetchPatientDietPlans(patient);
+
     return {
         ...patient,
-        planosAlimentares: await Promise.all(
-            (patient.planosAlimentares ?? []).map((plan, index) => toDietPlanRecord(plan, patient, index)),
-        ),
+        planosAlimentares,
     };
 }
 
