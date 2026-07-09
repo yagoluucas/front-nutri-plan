@@ -20,6 +20,14 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
 interface FoodsApiResponse<T> {
     alimentos?: T[];
     message?: string;
+    page?: number;
+    hasNextPage?: boolean;
+}
+
+export interface FoodSearchResponse {
+    alimentos: IAlimentoAutocomplete[];
+    page: number;
+    hasNextPage: boolean;
 }
 
 function hasErrorName(error: unknown, name: string) {
@@ -38,11 +46,24 @@ function toFoodRequestError(error: unknown) {
     return error instanceof Error ? error : new Error("Não foi possível concluir a busca de alimentos.");
 }
 
-export async function searchFoods(term: string): Promise<IAlimentoAutocomplete[]> {
-    if (!term || term.length < 2) return [];
+export async function searchFoods(term: string, page = 1): Promise<FoodSearchResponse> {
+    const normalizedTerm = term.trim();
+
+    if (!normalizedTerm || normalizedTerm.length < 2) {
+        return {
+            alimentos: [],
+            page,
+            hasNextPage: false
+        };
+    }
     
     try {
-        const response = await fetchWithTimeout(`/api/alimentos/autocomplete?foodName=${encodeURIComponent(term)}`, {
+        const searchParams = new URLSearchParams({
+            foodName: normalizedTerm,
+            page: String(page)
+        });
+
+        const response = await fetchWithTimeout(`/api/alimentos/autocomplete?${searchParams.toString()}`, {
             method: "GET",
             credentials: "include"
         });
@@ -52,7 +73,12 @@ export async function searchFoods(term: string): Promise<IAlimentoAutocomplete[]
         }
 
         const data = await response.json() as FoodsApiResponse<IAlimentoAutocomplete>;
-        return data.alimentos || [];
+
+        return {
+            alimentos: data.alimentos || [],
+            page: typeof data.page === "number" ? data.page : page,
+            hasNextPage: Boolean(data.hasNextPage)
+        };
     } catch (error) {
         throw toFoodRequestError(error);
     }

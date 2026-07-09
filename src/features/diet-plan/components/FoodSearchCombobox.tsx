@@ -11,7 +11,16 @@ interface FoodSearchComboboxProps {
 }
 
 export default function FoodSearchCombobox({ onSelectFood }: FoodSearchComboboxProps) {
-    const { searchTerm, setSearchTerm, results, isLoading, error, setResults } = useFoodSearch();
+    const {
+        searchTerm,
+        setSearchTerm,
+        results,
+        isLoading,
+        isLoadingNextPage,
+        error,
+        loadNextPage,
+        clearResults
+    } = useFoodSearch();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +30,16 @@ export default function FoodSearchCombobox({ onSelectFood }: FoodSearchComboboxP
         onSelectFood(food);
         setSearchTerm("");
         setIsOpen(false);
-        setResults([]);
+        clearResults();
+    };
+
+    const handleResultsScroll = (event: React.UIEvent<HTMLDivElement>) => {
+        const element = event.currentTarget;
+        const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+
+        if (distanceFromBottom <= 24) {
+            void loadNextPage();
+        }
     };
 
     return (
@@ -45,7 +63,10 @@ export default function FoodSearchCombobox({ onSelectFood }: FoodSearchComboboxP
             </div>
 
             {isOpen && (searchTerm.length >= 2) && (
-                <div className="absolute top-full left-0 w-full mt-1 bg-surface-elevated border border-border-default rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                <div
+                    className="absolute top-full left-0 w-full mt-1 bg-surface-elevated border border-border-default rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+                    onScroll={handleResultsScroll}
+                >
                     {error && (
                         <div className="p-4 text-body-small text-feedback-error-text text-center">
                             {error}
@@ -73,6 +94,13 @@ export default function FoodSearchCombobox({ onSelectFood }: FoodSearchComboboxP
                             </span>
                         </button>
                     ))}
+
+                    {isLoadingNextPage && (
+                        <div className="flex items-center justify-center gap-2 p-3 text-body-small text-content-secondary">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Carregando mais alimentos...
+                        </div>
+                    )}
                 </div>
             )}
         </div>

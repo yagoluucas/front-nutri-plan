@@ -9,12 +9,13 @@ import {
 
 const foodAutocompleteSearchParamsSchema = z.object({
   foodName: z.string().trim().min(2).max(100),
+  page: z.coerce.number().int().min(1).default(1),
 }).strict();
 
 function unauthorizedResponse() {
   return NextResponse.json(
     {
-      message: "N\u00e3o autorizado",
+      message: "Não autorizado",
       error: true,
       statusCode: 401,
     },
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
 
   const upstreamUrl = new URL("/alimentos/autocomplete", AUTH_API_URL);
   upstreamUrl.searchParams.set("foodName", parsedSearchParams.data.foodName);
+  upstreamUrl.searchParams.set("page", String(parsedSearchParams.data.page));
 
   try {
     const upstreamResponse = await fetch(upstreamUrl, {
