@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import DietPlanForm from "@/src/features/diet-plan/components/DietPlanForm";
@@ -28,11 +28,13 @@ export default function PacientePlanoPage() {
     const params = useParams();
     const router = useRouter();
     const patientId = typeof params.id === "string" ? params.id : "";
+    const searchParams = useSearchParams();
+    const planId = searchParams.get("planId");
     const { profile } = useProfile();
     const [patient, setPatient] = useState<Patient | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const existingPlan = patient?.planosAlimentares[0];
+    const existingPlan = planId ? patient?.planosAlimentares.find(p => p.id === planId) : undefined;
 
     const handleSavePlan = async (plan: IDietPlanState) => {
         if (!patient) {

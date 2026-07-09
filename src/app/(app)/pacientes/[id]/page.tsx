@@ -13,6 +13,7 @@ import {
   Trash2,
   UtensilsCrossed,
   UserPen,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
@@ -64,11 +65,11 @@ export default function PacienteDetalhePage() {
     setPatient((currentPatient) =>
       currentPatient
         ? {
-            ...currentPatient,
-            planosAlimentares: currentPatient.planosAlimentares.filter(
-              (plan) => plan.id !== planId,
-            ),
-          }
+          ...currentPatient,
+          planosAlimentares: currentPatient.planosAlimentares.filter(
+            (plan) => plan.id !== planId,
+          ),
+        }
         : currentPatient,
     );
     toast.success("Plano removido da visualizacao atual.");
@@ -167,6 +168,7 @@ export default function PacienteDetalhePage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
       <header className="space-y-4">
+
         <Button
           type="button"
           variant="ghost"
@@ -270,6 +272,13 @@ export default function PacienteDetalhePage() {
               <p className="mt-2 text-body-small text-content-secondary">
                 Crie um plano para liberar as opcoes de refeicao e o PDF.
               </p>
+
+              <Button className="mt-5" type="button" variant="primary" onClick={() => router.push(`/pacientes/${patient.id}/plano`)}>
+
+                <Plus className="mr-2" />
+
+                Criar Plano Alimentar
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -324,7 +333,7 @@ export default function PacienteDetalhePage() {
                           buttonClassName="px-4 w-full"
                         />
                         <Link
-                          href={`/pacientes/${patient.id}/plano`}
+                          href={`/pacientes/${patient.id}/plano?planId=${plan.id}`}
                           className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-4 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
                         >
                           <Pencil className="mr-2 h-4 w-4" />
@@ -425,6 +434,13 @@ export default function PacienteDetalhePage() {
                   </article>
                 );
               })}
+
+              <Button className="mt-5" type="button" variant="primary" onClick={() => router.push(`/pacientes/${patient.id}/plano`)}>
+
+                <Plus className="mr-2" />
+
+                Novo Plano Alimentar
+              </Button>
             </div>
           )}
         </section>
