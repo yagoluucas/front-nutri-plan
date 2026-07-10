@@ -165,6 +165,12 @@ const styles = StyleSheet.create({
   },
 });
 
+const FOOD_NAME_SOURCE_PATTERNS = [
+  /\s*,?\s*Brasil\s*\([^)]*(?:amostra|amostras|m[eé]dia|mediana)[^)]*\)/gi,
+  /\s*\([^)]*(?:amostra|amostras|m[eé]dia|mediana|brasil)[^)]*\)/gi,
+  /\s*(?:,|-|–)\s*Brasil\s*$/gi,
+];
+
 function getInitials(name?: string) {
   const initials = (name || "Nutri Plan")
     .trim()
@@ -186,6 +192,23 @@ function sanitizeFileName(value?: string) {
     .slice(0, 60);
 
   return normalized || "paciente";
+}
+
+function formatFoodDisplayName(value?: string) {
+  const originalName = value?.trim();
+  if (!originalName) return "Alimento";
+
+  const cleanedName = FOOD_NAME_SOURCE_PATTERNS.reduce(
+    (name, pattern) => name.replace(pattern, ""),
+    originalName,
+  )
+    .replace(/\s*,\s*/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const displayName = cleanedName || originalName;
+
+  return displayName.charAt(0).toLocaleUpperCase("pt-BR") + displayName.slice(1);
 }
 
 function splitTextLines(value?: string) {
@@ -274,7 +297,9 @@ const DietPlanDocument = ({
             {meal.alimentos.map((food, index) => (
               <View key={food.id || index} style={styles.foodRow}>
                 <Text style={styles.foodBullet}>•</Text>
-                <Text style={styles.foodName}>{food.nomeAlimento}</Text>
+                <Text style={styles.foodName}>
+                  {formatFoodDisplayName(food.nomeAlimento)}
+                </Text>
                 <Text style={styles.foodAmount}>
                   {food.quantidade}x {food.medidaSelecionada.nomeMedida} (
                   {food.totalGramas.toFixed(0)}g)
@@ -294,7 +319,9 @@ const DietPlanDocument = ({
                 {meal.substituicao.alimentos.map((food, index) => (
                   <View key={food.id || index} style={styles.foodRow}>
                     <Text style={styles.foodBullet}>-</Text>
-                    <Text style={styles.foodName}>{food.nomeAlimento}</Text>
+                    <Text style={styles.foodName}>
+                      {formatFoodDisplayName(food.nomeAlimento)}
+                    </Text>
                     <Text style={styles.foodAmount}>
                       {food.quantidade}x {food.medidaSelecionada.nomeMedida} (
                       {food.totalGramas.toFixed(0)}g)
