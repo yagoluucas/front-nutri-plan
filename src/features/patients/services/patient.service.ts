@@ -2,6 +2,7 @@ import { z } from "zod";
 import { patientFormSchema, type PatientFormValues } from "../schemas/patient.schemas";
 import type { DietPlanRecord, Patient, PatientSummary } from "../types/patient.types";
 import { hydrateBackendPlan } from "../../diet-plan/services/dietPlan.service";
+import { fetchWithSession } from "../../auth/services/session.service";
 
 const apiPatientSummarySchema = z.object({
     id: z.string().trim().min(1),
@@ -85,7 +86,7 @@ async function requestPatientApi(endpoint: string, init?: RequestInit): Promise<
         headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithSession(endpoint, {
         ...init,
         headers,
         credentials: "include",

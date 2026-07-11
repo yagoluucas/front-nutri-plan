@@ -1,4 +1,5 @@
 import { IAlimentoAutocomplete, IAlimentoDetail } from "../types/dietPlan.types";
+import { fetchWithSession } from "../../auth/services/session.service";
 
 const TIMEOUT_MS = 60000; // 60 seconds for Render cold starts
 
@@ -8,13 +9,14 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
     
-    const response = await fetch(resource, {
-        ...options,
-        signal: controller.signal
-    });
-    
-    clearTimeout(id);
-    return response;
+    try {
+        return await fetchWithSession(resource, {
+            ...options,
+            signal: controller.signal
+        });
+    } finally {
+        clearTimeout(id);
+    }
 }
 
 interface FoodsApiResponse<T> {
@@ -96,7 +98,6 @@ export async function getFoodDetail(code: string): Promise<IAlimentoDetail> {
         }
 
         const data = await response.json() as FoodsApiResponse<IAlimentoDetail>;
-        // The API returns { alimentos: [alimentoParsed] }
         if (data.alimentos && data.alimentos.length > 0) {
             return data.alimentos[0];
         }
