@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
@@ -9,53 +10,18 @@ import { LOGIN_ROUTE } from "@/src/features/auth/constants";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
 import ProfileForm from "@/src/features/profile/components/ProfileForm";
 import { ProfileFormValues } from "@/src/features/profile/schemas/profile.schemas";
-import { deleteProfileApi, getProfileApi, updateProfileApi } from "@/src/features/profile/services/profile.service";
-import type { NutritionistProfile } from "@/src/features/profile/types/profile.types";
+import { deleteProfileApi, updateProfileApi } from "@/src/features/profile/services/profile.service";
 
 export default function MeuPerfilPage() {
     const router = useRouter();
-    const { syncProfile } = useProfile();
-    const [profile, setProfile] = useState<NutritionistProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { profile, isLoading, errorMessage, syncProfile } = useProfile();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-    useEffect(() => {
-        let isActive = true;
-
-        async function loadProfile() {
-            try {
-                setIsLoading(true);
-                setErrorMessage(null);
-                const loadedProfile = await getProfileApi();
-
-                if (isActive) {
-                    setProfile(loadedProfile);
-                    syncProfile(loadedProfile);
-                }
-            } catch (error) {
-                if (isActive) {
-                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar o perfil.");
-                }
-            } finally {
-                if (isActive) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        loadProfile();
-
-        return () => {
-            isActive = false;
-        };
-    }, [syncProfile]);
 
     const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string, imagemCapa?: string) => {
         try {
             const updatedProfile = await updateProfileApi(values, imagemPerfil, imagemCapa);
-            setProfile(updatedProfile);
             syncProfile(updatedProfile);
             toast.success("Perfil atualizado com sucesso.");
         } catch (error) {
@@ -67,6 +33,7 @@ export default function MeuPerfilPage() {
         try {
             setIsDeleting(true);
             await deleteProfileApi();
+            queryClient.clear();
             toast.success("Perfil excluido com sucesso.");
             router.replace(LOGIN_ROUTE);
             router.refresh();
@@ -79,7 +46,7 @@ export default function MeuPerfilPage() {
     };
 
     return (
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
+        <div className="mx-auto flex w-full max-w-7xl animate-in flex-col gap-8 px-6 py-8 fade-in slide-in-from-bottom-2 duration-300">
             <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-2">
                     <p className="text-caption font-semibold uppercase text-content-secondary">Conta</p>
@@ -89,7 +56,7 @@ export default function MeuPerfilPage() {
                     </p>
                 </div>
 
-                {profile && (
+                {!isLoading && !errorMessage && (
                     <Button type="button" variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Excluir perfil
@@ -104,7 +71,7 @@ export default function MeuPerfilPage() {
                         Buscando seus dados profissionais.
                     </p>
                 </section>
-            ) : errorMessage || !profile ? (
+            ) : errorMessage ? (
                 <section className="rounded-lg border border-border-default bg-surface-default p-10 text-center shadow-sm">
                     <h2 className="text-heading-h3 font-semibold text-content-primary">Nao foi possivel carregar o perfil</h2>
                     <p className="mt-2 text-body-default text-content-secondary">

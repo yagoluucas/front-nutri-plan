@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import PatientForm from "@/src/features/patients/components/PatientForm";
 import { PatientFormValues } from "@/src/features/patients/schemas/patient.schemas";
 import { createPatientApi } from "@/src/features/patients/services/patient.service";
+import { queryKeys } from "@/src/lib/queryKeys";
 
 export default function NovoPacientePage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (values: PatientFormValues) => {
         try {
             setIsSubmitting(true);
             const patient = await createPatientApi(values);
+            queryClient.setQueryData(queryKeys.patients.detail(patient.id), patient);
+            await queryClient.invalidateQueries({ queryKey: queryKeys.patients.list });
 
             toast.success("Paciente cadastrado com sucesso.");
             router.push(`/pacientes/${patient.id}`);

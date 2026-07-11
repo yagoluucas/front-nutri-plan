@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, FileText, Plus, Search, Users } from "lucide-react";
 import Input from "@/src/components/ui/Input";
-import { listPatientsApi } from "@/src/features/patients/services/patient.service";
-import type { PatientSummary } from "@/src/features/patients/types/patient.types";
+import { usePatientsQuery } from "@/src/features/patients/hooks/usePatientQueries";
 
 function formatUpdatedAt(value: string) {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -17,11 +16,37 @@ function formatUpdatedAt(value: string) {
     }).format(new Date(value));
 }
 
+function formatBirthDate(value?: string) {
+    if (!value) {
+        return "Nao informado";
+    }
+
+    const date = new Date(`${value}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Nao informado";
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    }).format(date);
+}
+
 export default function PacientesPage() {
-    const [patients, setPatients] = useState<PatientSummary[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [isLoading, setIsLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const {
+        data,
+        error,
+        isPending: isLoading,
+    } = usePatientsQuery();
+    const patients = useMemo(() => data ?? [], [data]);
+    const errorMessage = !data && error instanceof Error
+        ? error.message
+        : !data && error
+            ? "Nao foi possivel buscar os pacientes."
+            : null;
     const filteredPatients = useMemo(() => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -37,38 +62,8 @@ export default function PacientesPage() {
         ].some((value) => value?.toLowerCase().includes(normalizedSearch)));
     }, [patients, searchTerm]);
 
-    useEffect(() => {
-        let isActive = true;
-
-        async function loadPatients() {
-            try {
-                setIsLoading(true);
-                setErrorMessage(null);
-                const loadedPatients = await listPatientsApi();
-
-                if (isActive) {
-                    setPatients(loadedPatients);
-                }
-            } catch (error) {
-                if (isActive) {
-                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar os pacientes.");
-                }
-            } finally {
-                if (isActive) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        loadPatients();
-
-        return () => {
-            isActive = false;
-        };
-    }, []);
-
     return (
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
+        <div className="mx-auto flex w-full max-w-7xl animate-in flex-col gap-8 px-6 py-8 fade-in slide-in-from-bottom-2 duration-300">
             <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-2">
                     <p className="text-caption font-semibold uppercase text-content-secondary">Pacientes</p>
@@ -157,7 +152,7 @@ export default function PacientesPage() {
                                         <td className="px-4 py-4">
                                             <span className="inline-flex items-center gap-2 text-content-secondary">
                                                 <CalendarDays className="h-4 w-4" />
-                                                Nao informado
+                                                {formatBirthDate(patient.dataNascimento)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-4">

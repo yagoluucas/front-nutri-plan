@@ -12,7 +12,7 @@ export interface PatientSummary {
     nome: string;
     sobrenome: string;
     email?: string;
-    sexo: PatientFormValues["sexo"];
+    dataNascimento?: PatientFormValues["dataNascimento"];
     qtdPlanos: number;
     createdAt: string;
     updatedAt: string;

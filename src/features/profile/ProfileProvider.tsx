@@ -5,16 +5,19 @@ import {
     ReactNode,
     useCallback,
     useContext,
-    useEffect,
     useMemo,
-    useState,
 } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/src/lib/queryKeys";
 import { getProfileApi } from "./services/profile.service";
 import type { NutritionistProfile } from "./types/profile.types";
 
 interface ProfileContextValue {
     profile: NutritionistProfile;
+    isLoading: boolean;
+    errorMessage: string | null;
     syncProfile: (profile: NutritionistProfile) => void;
+    refetchProfile: () => Promise<void>;
 }
 
 const defaultProfile: NutritionistProfile = {
@@ -29,38 +32,38 @@ const defaultProfile: NutritionistProfile = {
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-    const [profile, setProfile] = useState<NutritionistProfile>(defaultProfile);
+    const queryClient = useQueryClient();
+    const {
+        data,
+        error,
+        isPending,
+        refetch,
+    } = useQuery({
+        queryKey: queryKeys.profile,
+        queryFn: getProfileApi,
+    });
 
     const syncProfile = useCallback((nextProfile: NutritionistProfile) => {
-        setProfile(nextProfile);
-    }, []);
+        queryClient.setQueryData(queryKeys.profile, nextProfile);
+    }, [queryClient]);
 
-    useEffect(() => {
-        let isActive = true;
+    const refetchProfile = useCallback(async () => {
+        await refetch();
+    }, [refetch]);
 
-        async function loadProfile() {
-            try {
-                const loadedProfile = await getProfileApi();
-
-                if (isActive) {
-                    syncProfile(loadedProfile);
-                }
-            } catch {
-                // Keep default profile when fetching is unavailable.
-            }
-        }
-
-        loadProfile();
-
-        return () => {
-            isActive = false;
-        };
-    }, [syncProfile]);
+    const errorMessage = !data && error instanceof Error
+        ? error.message
+        : !data && error
+            ? "Nao foi possivel buscar o perfil."
+            : null;
 
     const value = useMemo<ProfileContextValue>(() => ({
-        profile,
+        profile: data ?? defaultProfile,
+        isLoading: isPending,
+        errorMessage,
         syncProfile,
-    }), [profile, syncProfile]);
+        refetchProfile,
+    }), [data, errorMessage, isPending, refetchProfile, syncProfile]);
 
     return (
         <ProfileContext.Provider value={value}>

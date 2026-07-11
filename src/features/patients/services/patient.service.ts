@@ -8,7 +8,7 @@ const apiPatientSummarySchema = z.object({
     nome: z.string().trim().min(1),
     sobrenome: z.string().trim().min(1),
     email: z.string().optional(),
-    sexo: z.enum(["Masculino", "Feminino", "Outro"]),
+    dataNascimento: patientFormSchema.shape.dataNascimento,
     qtdPlanos: z.number().int().min(0),
     createdAt: z.string().trim().min(1),
     updatedAt: z.string().trim().min(1),

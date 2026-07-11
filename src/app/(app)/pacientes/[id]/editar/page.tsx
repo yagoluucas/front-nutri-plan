@@ -1,28 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import PatientForm from "@/src/features/patients/components/PatientForm";
+import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
 import { PatientFormValues } from "@/src/features/patients/schemas/patient.schemas";
-import { getPatientApi, updatePatientApi } from "@/src/features/patients/services/patient.service";
-import type { Patient } from "@/src/features/patients/types/patient.types";
+import { updatePatientApi } from "@/src/features/patients/services/patient.service";
+import { queryKeys } from "@/src/lib/queryKeys";
 
 export default function EditarPacientePage() {
     const params = useParams();
     const router = useRouter();
+    const queryClient = useQueryClient();
     const patientId = typeof params.id === "string" ? params.id : "";
-    const [patient, setPatient] = useState<Patient | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const {
+        data: patient,
+        error,
+        isPending: isLoading,
+    } = usePatientQuery(patientId);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const errorMessage = !patient && error instanceof Error
+        ? error.message
+        : !patient && error
+            ? "Nao foi possivel buscar o paciente."
+            : null;
 
     const handleSubmit = async (values: PatientFormValues) => {
         try {
             setIsSubmitting(true);
-            await updatePatientApi(patientId, values);
+            const updatedPatient = await updatePatientApi(patientId, values);
+            queryClient.setQueryData(queryKeys.patients.detail(patientId), updatedPatient);
+            await queryClient.invalidateQueries({ queryKey: queryKeys.patients.list });
             toast.success("Dados do paciente atualizados.");
             router.push(`/pacientes/${patientId}`);
         } catch (error) {
@@ -31,38 +43,6 @@ export default function EditarPacientePage() {
             setIsSubmitting(false);
         }
     };
-
-    useEffect(() => {
-        let isActive = true;
-
-        async function loadPatient() {
-            try {
-                setIsLoading(true);
-                setErrorMessage(null);
-                const loadedPatient = await getPatientApi(patientId);
-
-                if (isActive) {
-                    setPatient(loadedPatient);
-                }
-            } catch (error) {
-                if (isActive) {
-                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar o paciente.");
-                }
-            } finally {
-                if (isActive) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        if (patientId) {
-            loadPatient();
-        }
-
-        return () => {
-            isActive = false;
-        };
-    }, [patientId]);
 
     if (isLoading) {
         return (

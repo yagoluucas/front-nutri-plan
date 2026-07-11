@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -19,9 +19,8 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import PDFGenerator from "@/src/features/diet-plan/components/PDFGenerator";
 import { calculatePlanMicronutrients } from "@/src/features/diet-plan/utils/nutritionCalculations";
-import { getPatientApi } from "@/src/features/patients/services/patient.service";
+import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
-import type { Patient } from "@/src/features/patients/types/patient.types";
 
 function formatDate(value?: string) {
   if (!value) {
@@ -56,60 +55,26 @@ export default function PacienteDetalhePage() {
   const router = useRouter();
   const patientId = typeof params.id === "string" ? params.id : "";
   const { profile } = useProfile();
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    data: patient,
+    error,
+    isPending: isLoading,
+  } = usePatientQuery(patientId);
+  const errorMessage = !patient && error instanceof Error
+    ? error.message
+    : !patient && error
+      ? "Nao foi possivel buscar o paciente."
+      : null;
+  const [hiddenPlanIds, setHiddenPlanIds] = useState<string[]>([]);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const visiblePlans = patient?.planosAlimentares.filter(
+    (plan) => !hiddenPlanIds.includes(plan.id),
+  ) ?? [];
 
   const handleDeletePlan = (planId: string) => {
-    setPatient((currentPatient) =>
-      currentPatient
-        ? {
-          ...currentPatient,
-          planosAlimentares: currentPatient.planosAlimentares.filter(
-            (plan) => plan.id !== planId,
-          ),
-        }
-        : currentPatient,
-    );
+    setHiddenPlanIds((currentIds) => [...currentIds, planId]);
     toast.success("Plano removido da visualizacao atual.");
   };
-
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadPatient() {
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
-        const loadedPatient = await getPatientApi(patientId);
-
-        if (isActive) {
-          setPatient(loadedPatient);
-        }
-      } catch (error) {
-        if (isActive) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "Nao foi possivel buscar o paciente.",
-          );
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    if (patientId) {
-      loadPatient();
-    }
-
-    return () => {
-      isActive = false;
-    };
-  }, [patientId]);
 
   if (isLoading) {
     return (
@@ -253,15 +218,15 @@ export default function PacienteDetalhePage() {
                 Planos alimentares
               </h2>
               <p className="mt-1 text-body-small text-content-secondary">
-                {patient.planosAlimentares.length}{" "}
-                {patient.planosAlimentares.length === 1
+                {visiblePlans.length}{" "}
+                {visiblePlans.length === 1
                   ? "plano vinculado"
                   : "planos vinculados"}
               </p>
             </div>
           </div>
 
-          {patient.planosAlimentares.length === 0 ? (
+          {visiblePlans.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border-default bg-background-subtle p-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-action-primary">
                 <UtensilsCrossed className="h-6 w-6" />
@@ -282,7 +247,7 @@ export default function PacienteDetalhePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {patient.planosAlimentares.map((plan) => {
+              {visiblePlans.map((plan) => {
                 const isExpanded = expandedPlanId === plan.id;
                 const micronutrients = calculatePlanMicronutrients(
                   plan.refeicoes,

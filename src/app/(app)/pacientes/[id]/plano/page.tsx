@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import DietPlanForm from "@/src/features/diet-plan/components/DietPlanForm";
 import { IDietPlanState, IPatientData } from "@/src/features/diet-plan/types/dietPlan.types";
 import { saveDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
-import { getPatientApi } from "@/src/features/patients/services/patient.service";
+import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
-import type { Patient } from "@/src/features/patients/types/patient.types";
+import { queryKeys } from "@/src/lib/queryKeys";
 
 function mapPatientToDietPlanPatient(patient: {
     nome: string;
@@ -27,13 +27,21 @@ function mapPatientToDietPlanPatient(patient: {
 export default function PacientePlanoPage() {
     const params = useParams();
     const router = useRouter();
+    const queryClient = useQueryClient();
     const patientId = typeof params.id === "string" ? params.id : "";
     const searchParams = useSearchParams();
     const planId = searchParams.get("planId");
     const { profile } = useProfile();
-    const [patient, setPatient] = useState<Patient | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const {
+        data: patient,
+        error,
+        isPending: isLoading,
+    } = usePatientQuery(patientId);
+    const errorMessage = !patient && error instanceof Error
+        ? error.message
+        : !patient && error
+            ? "Nao foi possivel buscar o paciente."
+            : null;
     const existingPlan = planId ? patient?.planosAlimentares.find(p => p.id === planId) : undefined;
 
     const handleSavePlan = async (plan: IDietPlanState) => {
@@ -52,41 +60,15 @@ export default function PacientePlanoPage() {
             : { ...plan, id: undefined };
 
         await saveDietPlanApi(patient.id, planToSave);
+        await Promise.all([
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.patients.detail(patient.id),
+            }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.patients.list }),
+        ]);
         toast.success("Plano salvo com sucesso.");
         router.push(`/pacientes/${patient.id}`);
     };
-
-    useEffect(() => {
-        let isActive = true;
-
-        async function loadPatient() {
-            try {
-                setIsLoading(true);
-                setErrorMessage(null);
-                const loadedPatient = await getPatientApi(patientId);
-
-                if (isActive) {
-                    setPatient(loadedPatient);
-                }
-            } catch (error) {
-                if (isActive) {
-                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel buscar o paciente.");
-                }
-            } finally {
-                if (isActive) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        if (patientId) {
-            loadPatient();
-        }
-
-        return () => {
-            isActive = false;
-        };
-    }, [patientId]);
 
     if (isLoading) {
         return (

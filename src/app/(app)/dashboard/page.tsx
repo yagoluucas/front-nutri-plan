@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
     ArrowRight,
@@ -21,8 +21,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { listPatientsApi } from "@/src/features/patients/services/patient.service";
-import type { PatientSummary } from "@/src/features/patients/types/patient.types";
+import { usePatientsQuery } from "@/src/features/patients/hooks/usePatientQueries";
 
 const MONTHS_IN_OVERVIEW = 6;
 const RECENT_PATIENTS_LIMIT = 5;
@@ -97,40 +96,18 @@ function getMonthKey(date: Date) {
 }
 
 export default function DashboardPage() {
-    const [patients, setPatients] = useState<PatientSummary[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [reloadKey, setReloadKey] = useState(0);
-
-    useEffect(() => {
-        let isActive = true;
-
-        async function loadPatients() {
-            try {
-                setIsLoading(true);
-                setErrorMessage(null);
-                const loadedPatients = await listPatientsApi();
-
-                if (isActive) {
-                    setPatients(loadedPatients);
-                }
-            } catch (error) {
-                if (isActive) {
-                    setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel carregar o dashboard.");
-                }
-            } finally {
-                if (isActive) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        loadPatients();
-
-        return () => {
-            isActive = false;
-        };
-    }, [reloadKey]);
+    const {
+        data,
+        error,
+        isPending: isLoading,
+        refetch,
+    } = usePatientsQuery();
+    const patients = useMemo(() => data ?? [], [data]);
+    const errorMessage = !data && error instanceof Error
+        ? error.message
+        : !data && error
+            ? "Nao foi possivel carregar o dashboard."
+            : null;
 
     const dashboardData = useMemo(() => {
         const now = new Date();
@@ -220,7 +197,7 @@ export default function DashboardPage() {
                     <p className="mt-2 text-body-default text-content-secondary">{errorMessage}</p>
                     <button
                         type="button"
-                        onClick={() => setReloadKey((currentKey) => currentKey + 1)}
+                        onClick={() => void refetch()}
                         className="mt-6 inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-action-secondary px-6 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
                     >
                         Tentar novamente
