@@ -90,6 +90,7 @@ export async function getProfileApi(): Promise<NutritionistProfile> {
 export async function updateProfileApi(
   values: ProfileFormValues,
   imagemPerfil?: string,
+  imagemCapa?: string,
 ): Promise<NutritionistProfile> {
   const parsedValues = profileFormSchema.parse(values);
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
@@ -97,6 +98,7 @@ export async function updateProfileApi(
     body: JSON.stringify({
       ...parsedValues,
       imagemPerfil,
+      imagemCapa,
     }),
   });
 
