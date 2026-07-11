@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
+import {
+  AUTH_REFRESH_COOKIE_NAME,
+  AUTH_TOKEN_COOKIE_NAME,
+} from "@/src/features/auth/constants";
 
 export const AUTH_API_URL =
   process.env.API_URL ||
@@ -8,7 +11,23 @@ export const AUTH_API_URL =
     ? "https://api-nutri-plan.onrender.com"
     : "http://localhost:5000");
 
-const TOKEN_KEYS = new Set(["token", "accesstoken", "access_token", "jwt"]);
+const DEFAULT_ACCESS_TOKEN_MAX_AGE = 15 * 60;
+const DEFAULT_REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
+const TOKEN_KEYS = new Set([
+  "token",
+  "accesstoken",
+  "access_token",
+  "refreshtoken",
+  "refresh_token",
+  "jwt",
+]);
+
+export interface SessionTokens {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenMaxAge: number;
+  refreshTokenMaxAge: number;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,7 +73,70 @@ export function getBearerToken(authorizationHeader: string | null): string | nul
   }
 
   const [scheme, token] = authorizationHeader.trim().split(/\s+/);
-  return scheme?.toLowerCase() === "bearer" && token?.trim() ? token.trim() : null;
+  return scheme?.toLowerCase() === "bearer" && token?.trim()
+    ? token.trim()
+    : null;
+}
+
+function parseMaxAge(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export function getSessionTokens(headers: Headers): SessionTokens | null {
+  const accessToken = getBearerToken(headers.get("authorization"));
+  const refreshToken = headers.get("x-refresh-token")?.trim();
+
+  if (!accessToken || !refreshToken) {
+    return null;
+  }
+
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenMaxAge: parseMaxAge(
+      headers.get("x-access-token-expires-in"),
+      DEFAULT_ACCESS_TOKEN_MAX_AGE,
+    ),
+    refreshTokenMaxAge: parseMaxAge(
+      headers.get("x-refresh-token-expires-in"),
+      DEFAULT_REFRESH_TOKEN_MAX_AGE,
+    ),
+  };
+}
+
+function cookieOptions(maxAge: number) {
+  return {
+    httpOnly: true,
+    maxAge,
+    path: "/",
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+  };
+}
+
+export function applySessionCookies(
+  response: NextResponse,
+  tokens: SessionTokens,
+) {
+  response.cookies.set(
+    AUTH_TOKEN_COOKIE_NAME,
+    tokens.accessToken,
+    cookieOptions(tokens.accessTokenMaxAge),
+  );
+  response.cookies.set(
+    AUTH_REFRESH_COOKIE_NAME,
+    tokens.refreshToken,
+    cookieOptions(tokens.refreshTokenMaxAge),
+  );
+
+  return response;
+}
+
+export function clearAuthCookies(response: NextResponse) {
+  response.cookies.set(AUTH_TOKEN_COOKIE_NAME, "", cookieOptions(0));
+  response.cookies.set(AUTH_REFRESH_COOKIE_NAME, "", cookieOptions(0));
+  return response;
 }
 
 export function getResponseMessage(payload: unknown, fallback: string): string {
@@ -83,22 +165,14 @@ export function authErrorResponse(
   );
 }
 
-export function authSuccessResponse(payload: unknown, headerToken?: string | null) {
-  const token = headerToken?.trim() || null;
+export function authSuccessResponse(
+  payload: unknown,
+  tokens: SessionTokens,
+) {
   const body = isRecord(payload)
     ? sanitizeAuthPayload(payload)
     : { data: sanitizeAuthPayload(payload) };
   const response = NextResponse.json(body);
 
-  if (token) {
-    response.cookies.set(AUTH_TOKEN_COOKIE_NAME, token, {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-  }
-
-  return response;
+  return applySessionCookies(response, tokens);
 }
