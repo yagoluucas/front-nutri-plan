@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
 import {
   AUTH_API_URL,
+  applyAuthenticationState,
+  fetchAuthenticatedUpstream,
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
@@ -13,24 +14,9 @@ interface PatientRouteContext {
   }>;
 }
 
-function unauthorizedResponse() {
-  return NextResponse.json(
-    {
-      message: "Nao autorizado",
-      error: true,
-      statusCode: 401,
-    },
-    { status: 401 },
-  );
-}
-
 function invalidPatientResponse(message = "Dados do paciente invalidos.") {
   return NextResponse.json(
-    {
-      message,
-      error: true,
-      statusCode: 400,
-    },
+    { message, error: true, statusCode: 400 },
     { status: 400 },
   );
 }
@@ -39,28 +25,28 @@ function getPatientUrl(patientId: string) {
   return new URL(`/pacientes/${encodeURIComponent(patientId)}`, AUTH_API_URL);
 }
 
+async function toNextResponse(
+  result: Awaited<ReturnType<typeof fetchAuthenticatedUpstream>>,
+) {
+  const payload = await readResponseBody(result.upstreamResponse);
+  const response = NextResponse.json(sanitizeAuthPayload(payload), {
+    status: result.upstreamResponse.status,
+  });
+
+  return applyAuthenticationState(response, result);
+}
+
 export async function GET(request: NextRequest, context: PatientRouteContext) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   const { id } = await context.params;
 
   try {
-    const upstreamResponse = await fetch(getPatientUrl(id), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-    const payload = await readResponseBody(upstreamResponse);
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      getPatientUrl(id),
+      { method: "GET" },
+    );
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return toNextResponse(result);
   } catch (error) {
     console.error("Erro ao buscar paciente:", error);
 
@@ -76,12 +62,6 @@ export async function GET(request: NextRequest, context: PatientRouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: PatientRouteContext) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   let requestBody: unknown;
 
   try {
@@ -101,22 +81,17 @@ export async function PATCH(request: NextRequest, context: PatientRouteContext) 
   const { id } = await context.params;
 
   try {
-    const upstreamResponse = await fetch(getPatientUrl(id), {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      getPatientUrl(id),
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paciente: parsedPatient.data }),
       },
-      body: JSON.stringify({
-        paciente: parsedPatient.data,
-      }),
-      cache: "no-store",
-    });
-    const payload = await readResponseBody(upstreamResponse);
+    );
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return toNextResponse(result);
   } catch (error) {
     console.error("Erro ao atualizar paciente:", error);
 
@@ -132,27 +107,16 @@ export async function PATCH(request: NextRequest, context: PatientRouteContext) 
 }
 
 export async function DELETE(request: NextRequest, context: PatientRouteContext) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   const { id } = await context.params;
 
   try {
-    const upstreamResponse = await fetch(getPatientUrl(id), {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-    const payload = await readResponseBody(upstreamResponse);
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      getPatientUrl(id),
+      { method: "DELETE" },
+    );
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return toNextResponse(result);
   } catch (error) {
     console.error("Erro ao excluir paciente:", error);
 
