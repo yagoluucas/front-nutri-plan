@@ -205,16 +205,6 @@ export default function DashboardPage() {
                         Acompanhe o crescimento da sua base e identifique pacientes que precisam de um novo plano alimentar.
                     </p>
                 </div>
-
-                {!isLoading && !errorMessage && patients.length > 0 && (
-                    <Link
-                        href="/pacientes/novo"
-                        className="inline-flex h-11 items-center justify-center rounded-md bg-action-primary px-6 text-button font-semibold text-action-primary-text shadow-sm transition-colors hover:bg-action-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
-                    >
-                        <Plus className="mr-2 h-5 w-5" aria-hidden="true" />
-                        Novo paciente
-                    </Link>
-                )}
             </header>
 
             {isLoading ? (
