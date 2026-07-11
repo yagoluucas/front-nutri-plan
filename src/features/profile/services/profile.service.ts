@@ -5,6 +5,7 @@ import {
 } from "../schemas/profile.schemas";
 import type { NutritionistProfile } from "../types/profile.types";
 import { z } from "zod";
+import { fetchWithSession } from "../../auth/services/session.service";
 
 const profileResponseSchema = z.object({
   nutricionista: profileApiSchema,
@@ -33,7 +34,7 @@ async function requestProfileApi(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetchWithSession(endpoint, {
     ...init,
     headers,
     credentials: "include",
