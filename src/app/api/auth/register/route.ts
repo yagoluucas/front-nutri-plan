@@ -4,7 +4,7 @@ import {
   AUTH_API_URL,
   authErrorResponse,
   authSuccessResponse,
-  getBearerToken,
+  getSessionTokens,
   readResponseBody,
 } from "../_utils";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     requestBody = await request.json();
   } catch {
     return NextResponse.json(
-      { message: "Dados de cadastro inválidos." },
+      { message: "Dados de cadastro invalidos." },
       { status: 400 },
     );
   }
@@ -24,7 +24,11 @@ export async function POST(request: Request) {
 
   if (!parsedRegistration.success) {
     return NextResponse.json(
-      { message: parsedRegistration.error.issues[0]?.message || "Dados de cadastro inválidos." },
+      {
+        message:
+          parsedRegistration.error.issues[0]?.message ||
+          "Dados de cadastro invalidos.",
+      },
       { status: 400 },
     );
   }
@@ -56,15 +60,21 @@ export async function POST(request: Request) {
       );
     }
 
-    return authSuccessResponse(
-      payload,
-      getBearerToken(upstreamResponse.headers.get("authorization")),
-    );
+    const tokens = getSessionTokens(upstreamResponse.headers);
+
+    if (!tokens) {
+      return NextResponse.json(
+        { message: "Resposta invalida do servidor de autenticacao." },
+        { status: 502 },
+      );
+    }
+
+    return authSuccessResponse(payload, tokens);
   } catch (error) {
-    console.error("Erro ao conectar com o serviço de cadastro:", error);
+    console.error("Erro ao conectar com o servico de cadastro:", error);
 
     return NextResponse.json(
-      { message: "Não foi possível conectar ao servidor de autenticação." },
+      { message: "Nao foi possivel conectar ao servidor de autenticacao." },
       { status: 502 },
     );
   }
