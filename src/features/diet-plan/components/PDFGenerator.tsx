@@ -23,6 +23,31 @@ const styles = StyleSheet.create({
     padding: 40,
     fontFamily: "Helvetica", // Basic font
   },
+  visualHeader: {
+    height: 100,
+    marginHorizontal: -40,
+    marginTop: -40,
+    marginBottom: 20,
+    position: "relative",
+    backgroundColor: "#FFFFFF",
+  },
+  coverImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+  centeredProfileImage: {
+    position: "absolute",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    left: "50%",
+    top: 14,
+    marginLeft: -36,
+    objectFit: "cover",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+  },
   header: {
     marginBottom: 20,
     borderBottomWidth: 1,
@@ -33,25 +58,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     alignItems: "center",
-  },
-  profileImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    objectFit: "cover",
-  },
-  profileFallback: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#CDEAE1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  profileInitials: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#059669",
   },
   headerText: {
     flex: 1,
@@ -171,18 +177,6 @@ const FOOD_NAME_SOURCE_PATTERNS = [
   /\s*(?:,|-|–)\s*Brasil\s*$/gi,
 ];
 
-function getInitials(name?: string) {
-  const initials = (name || "Nutri Plan")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((item) => item[0])
-    .join("")
-    .toUpperCase();
-
-  return initials || "NP";
-}
-
 function sanitizeFileName(value?: string) {
   const normalized = (value || "paciente")
     .normalize("NFD")
@@ -228,37 +222,30 @@ const DietPlanDocument = ({
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          {profile?.fotoPerfil || profile?.imagemPerfil ? (
+      {(profile?.imagemCapa || profile?.fotoPerfil || profile?.imagemPerfil) && (
+        <View style={styles.visualHeader}>
+          {profile?.imagemCapa && (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={profile.imagemCapa} style={styles.coverImage} />
+          )}
+          {(profile?.fotoPerfil || profile?.imagemPerfil) && (
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image
               src={profile.fotoPerfil || profile.imagemPerfil || ""}
-              style={styles.profileImage}
+              style={styles.centeredProfileImage}
             />
-          ) : (
-            <View style={styles.profileFallback}>
-              <Text style={styles.profileInitials}>
-                {getInitials(profile?.nome)}
-              </Text>
-            </View>
           )}
+        </View>
+      )}
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Plano Alimentar</Text>
             <Text style={styles.patientInfo}>
               {profile?.nome || "Nutricionista"} -{" "}
               {profile?.profissao || "Nutricionista"}
-              {profile?.crn ? ` | ${profile.crn}` : ""}
             </Text>
-            <Text style={styles.patientInfo}>
-              Paciente: {data.paciente.nome || "Não informado"}
-            </Text>
-            {data.objetivoDoPlano && (
-              <Text style={styles.patientInfo}>
-                Objetivo: {data.objetivoDoPlano}
-              </Text>
-            )}
             <Text style={styles.patientInfo}>
               Data: {new Date().toLocaleDateString("pt-BR")}
             </Text>
