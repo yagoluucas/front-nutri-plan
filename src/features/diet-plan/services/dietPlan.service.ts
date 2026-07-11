@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildMealFood, calculateMealMacros, convertMeasureToGrams } from "../utils/nutritionCalculations";
 import { getFoodDetail } from "./foods.service";
 import type { IDietPlanState, IMeal, IMealFood, IMedidaCaseira, IPatientData } from "../types/dietPlan.types";
+import { fetchWithSession } from "../../auth/services/session.service";
 
 const backendMeasureSchema = z.object({
     nomeMedida: z.string(),
@@ -60,7 +61,7 @@ async function requestDietPlanApi(endpoint: string, init?: RequestInit): Promise
         headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithSession(endpoint, {
         ...init,
         headers,
         credentials: "include",
