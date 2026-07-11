@@ -22,6 +22,13 @@ const TOKEN_KEYS = new Set([
   "jwt",
 ]);
 
+type RefreshAttempt = {
+  tokens: SessionTokens | null;
+  invalid: boolean;
+};
+
+const refreshRequests = new Map<string, Promise<RefreshAttempt>>();
+
 export interface SessionTokens {
   accessToken: string;
   refreshToken: string;
@@ -156,7 +163,7 @@ function withBearerToken(init: RequestInit | undefined, token: string): RequestI
   };
 }
 
-async function requestNewSessionTokens(refreshToken: string) {
+async function performRefresh(refreshToken: string): Promise<RefreshAttempt> {
   const refreshResponse = await fetch(`${AUTH_API_URL}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -175,6 +182,35 @@ async function requestNewSessionTokens(refreshToken: string) {
     tokens: getSessionTokens(refreshResponse.headers),
     invalid: false,
   };
+}
+
+function requestNewSessionTokens(refreshToken: string) {
+  const existingRequest = refreshRequests.get(refreshToken);
+
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = performRefresh(refreshToken).finally(() => {
+    refreshRequests.delete(refreshToken);
+  });
+
+  refreshRequests.set(refreshToken, request);
+  return request;
+}
+
+function sessionFailureResponse(status: 401 | 503, message: string) {
+  return new Response(
+    JSON.stringify({
+      message,
+      error: true,
+      statusCode: status,
+    }),
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 
 export async function fetchAuthenticatedUpstream(
@@ -199,13 +235,9 @@ export async function fetchAuthenticatedUpstream(
 
   if (!refreshToken) {
     return {
-      upstreamResponse: new Response(
-        JSON.stringify({
-          message: "Sessao expirada. Entre novamente.",
-          error: true,
-          statusCode: 401,
-        }),
-        { status: 401, headers: { "Content-Type": "application/json" } },
+      upstreamResponse: sessionFailureResponse(
+        401,
+        "Sessao expirada. Entre novamente.",
       ),
       clearSession: true,
     };
@@ -215,18 +247,11 @@ export async function fetchAuthenticatedUpstream(
 
   if (!refreshed.tokens) {
     return {
-      upstreamResponse: new Response(
-        JSON.stringify({
-          message: refreshed.invalid
-            ? "Sessao expirada. Entre novamente."
-            : "Nao foi possivel renovar a sessao.",
-          error: true,
-          statusCode: refreshed.invalid ? 401 : 503,
-        }),
-        {
-          status: refreshed.invalid ? 401 : 503,
-          headers: { "Content-Type": "application/json" },
-        },
+      upstreamResponse: sessionFailureResponse(
+        refreshed.invalid ? 401 : 503,
+        refreshed.invalid
+          ? "Sessao expirada. Entre novamente."
+          : "Nao foi possivel renovar a sessao.",
       ),
       clearSession: refreshed.invalid,
     };
