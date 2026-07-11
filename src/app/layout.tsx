@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
 import { SessionManager } from "@/src/features/auth/components/SessionManager";
 
 const geistSans = Geist({
@@ -53,7 +52,6 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SessionManager />
         {children}
-        <Analytics />
         <Toaster richColors position="top-right" />
       </body>
     </html>
