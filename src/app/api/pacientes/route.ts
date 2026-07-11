@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  AUTH_API_URL,
   applyAuthenticationState,
   fetchAuthenticatedUpstream,
   readResponseBody,
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = await fetchAuthenticatedUpstream(
       request,
-      new URL("/pacientes", process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://api-nutri-plan.onrender.com" : "http://localhost:5000")),
+      new URL("/pacientes", AUTH_API_URL),
       { method: "GET" },
     );
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await fetchAuthenticatedUpstream(
       request,
-      new URL("/pacientes", process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://api-nutri-plan.onrender.com" : "http://localhost:5000")),
+      new URL("/pacientes", AUTH_API_URL),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
