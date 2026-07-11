@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Camera, Upload } from "lucide-react";
+import { Camera, ImageIcon, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
@@ -13,17 +13,18 @@ import { NutritionistProfile } from "../types/profile.types";
 
 interface ProfileFormProps {
     profile: NutritionistProfile;
-    onSubmit: (values: ProfileFormValues, imagemPerfil?: string) => void | Promise<void>;
+    onSubmit: (values: ProfileFormValues, imagemPerfil?: string, imagemCapa?: string) => void | Promise<void>;
 }
 
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const ACCEPTED_IMAGE_DESCRIPTION = "JPG, PNG ou WebP ate 2 MB.";
 
 function getInitials(name: string) {
-    const initials = name
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
+    const nameArray = name.trim().split(/\s+/);
+
+    const initials = nameArray
+        .slice(0, (nameArray.length - 1))
         .map((item) => item[0])
         .join("")
         .toUpperCase();
@@ -31,10 +32,38 @@ function getInitials(name: string) {
     return initials || "NP";
 }
 
+function validateImageFile(file: File) {
+    if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+        return "Use uma imagem JPG, PNG ou WebP.";
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+        return "A imagem deve ter ate 2 MB.";
+    }
+
+    return null;
+}
+
+function readImageAsBase64(file: File, onLoad: (image: string) => void) {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+        if (typeof reader.result === "string") {
+            onLoad(reader.result);
+        }
+    };
+
+    reader.readAsDataURL(file);
+}
+
 export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
-    const [selectedImage, setSelectedImage] = useState<string | undefined>();
-    const [imageError, setImageError] = useState<string | null>(null);
-    const preview = selectedImage ?? profile.imagemPerfil ?? profile.fotoPerfil;
+    const [selectedProfileImage, setSelectedProfileImage] = useState<string | undefined>();
+    const [selectedCoverImage, setSelectedCoverImage] = useState<string | undefined>();
+    const [profileImageError, setProfileImageError] = useState<string | null>(null);
+    const [coverImageError, setCoverImageError] = useState<string | null>(null);
+    const profileImagePreview = selectedProfileImage ?? profile.imagemPerfil ?? profile.fotoPerfil;
+    const coverImagePreview = selectedCoverImage ?? profile.imagemCapa;
+    const fullName = `${profile.nome} ${profile.sobrenome}`.trim();
     const {
         register,
         handleSubmit,
@@ -50,7 +79,7 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
             crn: profile.crn,
         },
     });
-    const initials = getInitials(`${profile.nome} ${profile.sobrenome}`);
+    const initials = getInitials(fullName);
 
     useEffect(() => {
         reset({
@@ -62,68 +91,131 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
         });
     }, [profile, reset]);
 
-    const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        setImageError(null);
+        setProfileImageError(null);
 
         if (!file) {
             return;
         }
 
-        if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
-            setImageError("Use uma imagem JPG, PNG ou WebP.");
+        const error = validateImageFile(file);
+
+        if (error) {
+            setProfileImageError(error);
             event.target.value = "";
             return;
         }
 
-        if (file.size > MAX_IMAGE_SIZE) {
-            setImageError("A imagem deve ter ate 2 MB.");
+        readImageAsBase64(file, setSelectedProfileImage);
+    };
+
+    const handleCoverImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        setCoverImageError(null);
+
+        if (!file) {
+            return;
+        }
+
+        const error = validateImageFile(file);
+
+        if (error) {
+            setCoverImageError(error);
             event.target.value = "";
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (typeof reader.result === "string") {
-                setSelectedImage(reader.result);
-            }
-        };
-        reader.readAsDataURL(file);
+        readImageAsBase64(file, setSelectedCoverImage);
     };
 
     const submitProfile = async (values: ProfileFormValues) => {
-        await onSubmit(values, preview);
-        setSelectedImage(undefined);
+        await onSubmit(values, profileImagePreview, coverImagePreview);
+        setSelectedProfileImage(undefined);
+        setSelectedCoverImage(undefined);
     };
 
     return (
-        <form onSubmit={handleSubmit(submitProfile)} className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-            <section className="rounded-lg border border-border-default bg-surface-default p-6 shadow-sm">
-                <div className="flex flex-col items-center text-center">
-                    <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-heading-h2 font-bold text-action-primary">
-                        {preview ? (
-                            <Image src={preview} alt="Foto de perfil" fill sizes="128px" className="object-cover" />
-                        ) : (
-                            initials
-                        )}
-                    </div>
+        <form onSubmit={handleSubmit(submitProfile)} className="grid grid-cols-1 gap-6">
+            <section className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-sm">
+                <div className="relative h-56 bg-surface-muted sm:h-64">
+                    {coverImagePreview ? (
+                        <Image
+                            src={coverImagePreview}
+                            alt="Imagem de capa"
+                            fill
+                            sizes="(min-width: 1280px) 1216px, calc(100vw - 48px)"
+                            className="object-cover"
+                            priority
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center text-content-muted">
+                            <div className="flex flex-col items-center gap-2">
+                                <ImageIcon className="h-8 w-8" />
+                                <span className="text-body-small font-medium">Imagem de capa</span>
+                            </div>
+                        </div>
+                    )}
 
-                    <label className="mt-5 inline-flex cursor-pointer items-center justify-center rounded-md bg-action-secondary px-4 py-2 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
+                    <label className="absolute right-4 top-4 inline-flex cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-default px-4 py-2 text-button font-semibold text-content-primary shadow-sm transition-colors hover:bg-surface-muted focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
                         <Upload className="mr-2 h-4 w-4" />
-                        Escolher foto
+                        Escolher capa
                         <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
                             className="sr-only"
-                            onChange={handleImageChange}
+                            onChange={handleCoverImageChange}
                         />
                     </label>
+                </div>
 
-                    {imageError ? (
-                        <p className="mt-3 text-body-small text-feedback-error-text">{imageError}</p>
-                    ) : (
-                        <p className="mt-3 text-body-small text-content-secondary">JPG, PNG ou WebP ate 2 MB.</p>
-                    )}
+                <div className="px-6 pb-6">
+                    <div className="-mt-16 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                            <div className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-surface-default bg-brand-100 text-heading-h2 font-bold text-action-primary shadow-sm">
+                                {profileImagePreview ? (
+                                    <Image
+                                        src={profileImagePreview}
+                                        alt="Foto de perfil"
+                                        fill
+                                        sizes="128px"
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    initials
+                                )}
+                            </div>
+
+                            <div className="pb-2">
+                                <h2 className="text-heading-h3 font-semibold text-content-primary">
+                                    {fullName || "Nutricionista"}
+                                </h2>
+                                <p className="text-body-small text-content-secondary">
+                                    {profile.crn ? `${profile.profissao || "Nutricionista"} | ${profile.crn}` : profile.profissao || "Nutricionista"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-action-secondary px-4 py-2 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Escolher foto
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="sr-only"
+                                onChange={handleProfileImageChange}
+                            />
+                        </label>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-body-small text-content-secondary sm:grid-cols-2">
+                        <p className={profileImageError ? "text-feedback-error-text" : ""}>
+                            Foto de perfil: {profileImageError || ACCEPTED_IMAGE_DESCRIPTION}
+                        </p>
+                        <p className={coverImageError ? "text-feedback-error-text" : ""}>
+                            Capa: {coverImageError || ACCEPTED_IMAGE_DESCRIPTION}
+                        </p>
+                    </div>
                 </div>
             </section>
 
@@ -134,7 +226,7 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
                     </span>
                     <div>
                         <h2 className="text-heading-h3 font-semibold text-content-primary">Dados profissionais</h2>
-                    <p className="text-body-small text-content-secondary">Esses dados aparecem no PDF do plano alimentar.</p>
+                        <p className="text-body-small text-content-secondary">Esses dados aparecem no PDF do plano alimentar.</p>
                     </div>
                 </div>
 

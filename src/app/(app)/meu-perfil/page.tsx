@@ -52,9 +52,9 @@ export default function MeuPerfilPage() {
         };
     }, [syncProfile]);
 
-    const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string) => {
+    const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string, imagemCapa?: string) => {
         try {
-            const updatedProfile = await updateProfileApi(values, imagemPerfil);
+            const updatedProfile = await updateProfileApi(values, imagemPerfil, imagemCapa);
             setProfile(updatedProfile);
             syncProfile(updatedProfile);
             toast.success("Perfil atualizado com sucesso.");
