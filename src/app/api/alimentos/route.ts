@@ -1,34 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
 import {
   AUTH_API_URL,
+  applyAuthenticationState,
+  fetchAuthenticatedUpstream,
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
 
-const foodDetailSearchParamsSchema = z.object({
-  foodCode: z.string().trim().min(1).max(100),
-}).strict();
-
-function unauthorizedResponse() {
-  return NextResponse.json(
-    {
-      message: "N\u00e3o autorizado",
-      error: true,
-      statusCode: 401,
-    },
-    { status: 401 },
-  );
-}
+const foodDetailSearchParamsSchema = z
+  .object({
+    foodCode: z.string().trim().min(1).max(100),
+  })
+  .strict();
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   const parsedSearchParams = foodDetailSearchParamsSchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams.entries()),
   );
@@ -48,18 +34,15 @@ export async function GET(request: NextRequest) {
   upstreamUrl.searchParams.set("foodCode", parsedSearchParams.data.foodCode);
 
   try {
-    const upstreamResponse = await fetch(upstreamUrl, {
+    const result = await fetchAuthenticatedUpstream(request, upstreamUrl, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
     });
-    const payload = await readResponseBody(upstreamResponse);
+    const payload = await readResponseBody(result.upstreamResponse);
+    const response = NextResponse.json(sanitizeAuthPayload(payload), {
+      status: result.upstreamResponse.status,
+    });
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return applyAuthenticationState(response, result);
   } catch (error) {
     console.error("Erro ao buscar alimento:", error);
 

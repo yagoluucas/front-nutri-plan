@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_REFRESH_COOKIE_NAME,
   AUTH_TOKEN_COOKIE_NAME,
@@ -22,11 +22,24 @@ const TOKEN_KEYS = new Set([
   "jwt",
 ]);
 
+type RefreshAttempt = {
+  tokens: SessionTokens | null;
+  invalid: boolean;
+};
+
+const refreshRequests = new Map<string, Promise<RefreshAttempt>>();
+
 export interface SessionTokens {
   accessToken: string;
   refreshToken: string;
   accessTokenMaxAge: number;
   refreshTokenMaxAge: number;
+}
+
+export interface AuthenticatedUpstreamResult {
+  upstreamResponse: Response;
+  refreshedTokens?: SessionTokens;
+  clearSession?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -136,6 +149,138 @@ export function applySessionCookies(
 export function clearAuthCookies(response: NextResponse) {
   response.cookies.set(AUTH_TOKEN_COOKIE_NAME, "", cookieOptions(0));
   response.cookies.set(AUTH_REFRESH_COOKIE_NAME, "", cookieOptions(0));
+  return response;
+}
+
+function withBearerToken(init: RequestInit | undefined, token: string): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+
+  return {
+    ...init,
+    headers,
+    cache: "no-store",
+  };
+}
+
+async function performRefresh(refreshToken: string): Promise<RefreshAttempt> {
+  const refreshResponse = await fetch(`${AUTH_API_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+    cache: "no-store",
+  });
+
+  if (!refreshResponse.ok) {
+    return {
+      tokens: null,
+      invalid: [401, 403].includes(refreshResponse.status),
+    };
+  }
+
+  return {
+    tokens: getSessionTokens(refreshResponse.headers),
+    invalid: false,
+  };
+}
+
+function requestNewSessionTokens(refreshToken: string) {
+  const existingRequest = refreshRequests.get(refreshToken);
+
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = performRefresh(refreshToken).finally(() => {
+    refreshRequests.delete(refreshToken);
+  });
+
+  refreshRequests.set(refreshToken, request);
+  return request;
+}
+
+function sessionFailureResponse(status: 401 | 503, message: string) {
+  return new Response(
+    JSON.stringify({
+      message,
+      error: true,
+      statusCode: status,
+    }),
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
+export async function fetchAuthenticatedUpstream(
+  request: NextRequest,
+  input: URL | string,
+  init?: RequestInit,
+): Promise<AuthenticatedUpstreamResult> {
+  const accessToken = request.cookies
+    .get(AUTH_TOKEN_COOKIE_NAME)
+    ?.value.trim();
+  const refreshToken = request.cookies
+    .get(AUTH_REFRESH_COOKIE_NAME)
+    ?.value.trim();
+
+  if (accessToken) {
+    const firstResponse = await fetch(input, withBearerToken(init, accessToken));
+
+    if (firstResponse.status !== 401) {
+      return { upstreamResponse: firstResponse };
+    }
+  }
+
+  if (!refreshToken) {
+    return {
+      upstreamResponse: sessionFailureResponse(
+        401,
+        "Sessao expirada. Entre novamente.",
+      ),
+      clearSession: true,
+    };
+  }
+
+  const refreshed = await requestNewSessionTokens(refreshToken);
+
+  if (!refreshed.tokens) {
+    return {
+      upstreamResponse: sessionFailureResponse(
+        refreshed.invalid ? 401 : 503,
+        refreshed.invalid
+          ? "Sessao expirada. Entre novamente."
+          : "Nao foi possivel renovar a sessao.",
+      ),
+      clearSession: refreshed.invalid,
+    };
+  }
+
+  const retryResponse = await fetch(
+    input,
+    withBearerToken(init, refreshed.tokens.accessToken),
+  );
+
+  return {
+    upstreamResponse: retryResponse,
+    refreshedTokens: refreshed.tokens,
+    clearSession: retryResponse.status === 401,
+  };
+}
+
+export function applyAuthenticationState(
+  response: NextResponse,
+  result: AuthenticatedUpstreamResult,
+) {
+  if (result.refreshedTokens) {
+    applySessionCookies(response, result.refreshedTokens);
+  }
+
+  if (result.clearSession) {
+    clearAuthCookies(response);
+  }
+
   return response;
 }
 

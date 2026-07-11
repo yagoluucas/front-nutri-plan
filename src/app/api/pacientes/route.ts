@@ -1,43 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_TOKEN_COOKIE_NAME } from "@/src/features/auth/constants";
 import {
   AUTH_API_URL,
+  applyAuthenticationState,
+  fetchAuthenticatedUpstream,
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
 import { patientFormSchema } from "@/src/features/patients/schemas/patient.schemas";
 
-function unauthorizedResponse() {
+function invalidPatientResponse(message = "Dados do paciente invalidos.") {
   return NextResponse.json(
-    {
-      message: "Nao autorizado",
-      error: true,
-      statusCode: 401,
-    },
-    { status: 401 },
+    { message, error: true, statusCode: 400 },
+    { status: 400 },
   );
 }
 
+async function toNextResponse(
+  result: Awaited<ReturnType<typeof fetchAuthenticatedUpstream>>,
+) {
+  const payload = await readResponseBody(result.upstreamResponse);
+  const response = NextResponse.json(sanitizeAuthPayload(payload), {
+    status: result.upstreamResponse.status,
+  });
+
+  return applyAuthenticationState(response, result);
+}
+
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   try {
-    const upstreamResponse = await fetch(new URL("/pacientes", AUTH_API_URL), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-    const payload = await readResponseBody(upstreamResponse);
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      new URL("/pacientes", AUTH_API_URL),
+      { method: "GET" },
+    );
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return toNextResponse(result);
   } catch (error) {
     console.error("Erro ao buscar pacientes:", error);
 
@@ -53,57 +50,34 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value.trim();
-
-  if (!token) {
-    return unauthorizedResponse();
-  }
-
   let requestBody: unknown;
 
   try {
     requestBody = await request.json();
   } catch {
-    return NextResponse.json(
-      {
-        message: "Dados do paciente invalidos.",
-        error: true,
-        statusCode: 400,
-      },
-      { status: 400 },
-    );
+    return invalidPatientResponse();
   }
 
   const parsedPatient = patientFormSchema.safeParse(requestBody);
 
   if (!parsedPatient.success) {
-    return NextResponse.json(
-      {
-        message: parsedPatient.error.issues[0]?.message || "Dados do paciente invalidos.",
-        error: true,
-        statusCode: 400,
-      },
-      { status: 400 },
+    return invalidPatientResponse(
+      parsedPatient.error.issues[0]?.message || "Dados do paciente invalidos.",
     );
   }
 
   try {
-    const upstreamResponse = await fetch(new URL("/pacientes", AUTH_API_URL), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      new URL("/pacientes", AUTH_API_URL),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paciente: parsedPatient.data }),
       },
-      body: JSON.stringify({
-        paciente: parsedPatient.data,
-      }),
-      cache: "no-store",
-    });
-    const payload = await readResponseBody(upstreamResponse);
+    );
 
-    return NextResponse.json(sanitizeAuthPayload(payload), {
-      status: upstreamResponse.status,
-    });
+    return toNextResponse(result);
   } catch (error) {
     console.error("Erro ao cadastrar paciente:", error);
 
