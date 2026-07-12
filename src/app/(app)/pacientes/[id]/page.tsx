@@ -60,16 +60,18 @@ export default function PacienteDetalhePage() {
     error,
     isPending: isLoading,
   } = usePatientQuery(patientId);
-  const errorMessage = !patient && error instanceof Error
-    ? error.message
-    : !patient && error
-      ? "Nao foi possivel buscar o paciente."
-      : null;
+  const errorMessage =
+    !patient && error instanceof Error
+      ? error.message
+      : !patient && error
+        ? "Nao foi possivel buscar o paciente."
+        : null;
   const [hiddenPlanIds, setHiddenPlanIds] = useState<string[]>([]);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
-  const visiblePlans = patient?.planosAlimentares.filter(
-    (plan) => !hiddenPlanIds.includes(plan.id),
-  ) ?? [];
+  const visiblePlans =
+    patient?.planosAlimentares.filter(
+      (plan) => !hiddenPlanIds.includes(plan.id),
+    ) ?? [];
 
   const handleDeletePlan = (planId: string) => {
     setHiddenPlanIds((currentIds) => [...currentIds, planId]);
@@ -133,7 +135,6 @@ export default function PacienteDetalhePage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
       <header className="space-y-4">
-
         <Button
           type="button"
           variant="ghost"
@@ -238,10 +239,13 @@ export default function PacienteDetalhePage() {
                 Crie um plano para liberar as opcoes de refeicao e o PDF.
               </p>
 
-              <Button className="mt-5" type="button" variant="primary" onClick={() => router.push(`/pacientes/${patient.id}/plano`)}>
-
+              <Button
+                className="mt-5"
+                type="button"
+                variant="primary"
+                onClick={() => router.push(`/pacientes/${patient.id}/plano`)}
+              >
                 <Plus className="mr-2" />
-
                 Criar Plano Alimentar
               </Button>
             </div>
@@ -275,10 +279,11 @@ export default function PacienteDetalhePage() {
                         </p>
                       </div>
 
-                      <div className="grid grid-flow-col gap-2 auto-cols-[1fr] mt-3.5">
+                      <div className="mt-3.5 grid grid-cols-1 gap-2 sm:grid-flow-col sm:auto-cols-[1fr] sm:grid-cols-none sm:gap-1">
                         <Button
                           type="button"
                           variant="details"
+                          className="order-last w-full sm:order-0"
                           onClick={() =>
                             setExpandedPlanId(isExpanded ? null : plan.id)
                           }
@@ -295,11 +300,11 @@ export default function PacienteDetalhePage() {
                           profile={profile}
                           disabled={plan.refeicoes.length === 0}
                           label="Baixar Plano"
-                          buttonClassName="px-4 w-full"
+                          buttonClassName="w-full px-4"
                         />
                         <Link
                           href={`/pacientes/${patient.id}/plano?planId=${plan.id}`}
-                          className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-4 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
+                          className="inline-flex h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
                         >
                           <Pencil className="mr-2 h-4 w-4" />
                           Modificar
@@ -307,7 +312,7 @@ export default function PacienteDetalhePage() {
                         <Button
                           type="button"
                           variant="destructive"
-                          className="px-4"
+                          className="w-full px-4"
                           onClick={() => handleDeletePlan(plan.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -400,10 +405,13 @@ export default function PacienteDetalhePage() {
                 );
               })}
 
-              <Button className="mt-5" type="button" variant="primary" onClick={() => router.push(`/pacientes/${patient.id}/plano`)}>
-
+              <Button
+                className="mt-5"
+                type="button"
+                variant="primary"
+                onClick={() => router.push(`/pacientes/${patient.id}/plano`)}
+              >
                 <Plus className="mr-2" />
-
                 Novo Plano Alimentar
               </Button>
             </div>
