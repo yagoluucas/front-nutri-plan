@@ -15,12 +15,39 @@
     }
 
     html {
+        max-width: 100%;
+        overflow-x: clip;
         font-family: var(--font-primary);
     }
 
     body {
+        min-height: 100dvh;
+        max-width: 100%;
+        overflow-x: clip;
         background: var(--color-background-page);
         color: var(--color-content-primary);
+    }
+
+    main,
+    section,
+    article,
+    form,
+    fieldset {
+        min-width: 0;
+    }
+
+    img,
+    video,
+    canvas,
+    svg {
+        max-width: 100%;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+        min-width: 0;
     }
 
     button:disabled {
