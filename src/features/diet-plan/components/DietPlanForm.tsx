@@ -237,8 +237,11 @@ export default function DietPlanForm({
                                 </div>
                                 
                                 <div className="flex-1 space-y-1.5 mb-4">
-                                    <p className="text-caption text-content-secondary mb-2">
-                                        {meal.alimentos.length} {meal.alimentos.length === 1 ? 'alimento' : 'alimentos'}
+                                    <p className="text-caption font-semibold text-content-secondary mb-2">
+                                        Opção principal · {meal.alimentos.length} {meal.alimentos.length === 1 ? 'alimento' : 'alimentos'}
+                                    </p>
+                                    <p className="text-caption text-content-muted mb-2">
+                                        {meal.totalMacros.kcal.toFixed(0)} kcal · CHO {meal.totalMacros.cho.toFixed(1)}g · PTN {meal.totalMacros.ptn.toFixed(1)}g · LIP {meal.totalMacros.lip.toFixed(1)}g
                                     </p>
                                     {meal.alimentos.slice(0, 3).map(f => (
                                         <p key={f.id} className="text-body-small text-content-primary truncate">
@@ -255,14 +258,19 @@ export default function DietPlanForm({
 
                                 <div className="mb-4 rounded-lg border border-border-subtle bg-background-subtle p-3">
                                     <p className="mb-2 text-caption font-semibold uppercase text-content-secondary">
-                                        Substituicao
+                                        Opção substituta
                                     </p>
                                     {meal.substituicao?.alimentos.length ? (
-                                        meal.substituicao.alimentos.slice(0, 3).map((food) => (
-                                            <p key={food.id} className="truncate text-body-small text-content-primary">
-                                                {food.quantidade}x {food.medidaSelecionada.nomeMedida} - {food.nomeAlimento}
+                                        <>
+                                            <p className="mb-2 text-caption text-content-muted">
+                                                {meal.substituicao.alimentos.length} {meal.substituicao.alimentos.length === 1 ? 'alimento' : 'alimentos'} · {meal.substituicao.totalMacros.kcal.toFixed(0)} kcal · CHO {meal.substituicao.totalMacros.cho.toFixed(1)}g · PTN {meal.substituicao.totalMacros.ptn.toFixed(1)}g · LIP {meal.substituicao.totalMacros.lip.toFixed(1)}g
                                             </p>
-                                        ))
+                                            {meal.substituicao.alimentos.slice(0, 3).map((food) => (
+                                                <p key={food.id} className="truncate text-body-small text-content-primary">
+                                                    {food.quantidade}x {food.medidaSelecionada.nomeMedida} - {food.nomeAlimento}
+                                                </p>
+                                            ))}
+                                        </>
                                     ) : (
                                         <p className="text-body-small text-feedback-warning-text">Pendente</p>
                                     )}
@@ -272,14 +280,14 @@ export default function DietPlanForm({
                                 <div className="mt-auto flex justify-between items-center pt-3 border-t border-border-subtle">
                                     <button
                                         type="button"
-                                        className="text-body-small text-feedback-error-text font-medium hover:underline"
+                                        className="cursor-pointer text-body-small text-feedback-error-text font-medium hover:underline"
                                         onClick={() => handleRemoveMeal(meal.id)}
                                     >
                                         Remover
                                     </button>
                                     <button
                                         type="button"
-                                        className="text-body-small text-brand-700 font-semibold hover:text-brand-900 flex items-center gap-1 transition-colors"
+                                        className="cursor-pointer text-body-small text-brand-700 font-semibold hover:text-brand-900 flex items-center gap-1 transition-colors"
                                         onClick={() => handleOpenEdit(meal)}
                                     >
                                         Editar
@@ -292,7 +300,7 @@ export default function DietPlanForm({
                         <button
                             type="button"
                             onClick={handleOpenNew}
-                            className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-50"
+                            className="cursor-pointer bg-brand-50 border-2 border-dashed border-brand-200 rounded-xl p-5 flex flex-col items-center justify-center text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-colors min-h-50"
                         >
                             <Plus size={32} className="mb-2" />
                             <span className="font-semibold text-body-large">Nova Refeição</span>

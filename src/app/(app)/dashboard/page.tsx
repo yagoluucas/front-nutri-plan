@@ -21,10 +21,8 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import { config } from "@/src/constants/config";
 import { usePatientsQuery } from "@/src/features/patients/hooks/usePatientQueries";
-
-const MONTHS_IN_OVERVIEW = 6;
-const RECENT_PATIENTS_LIMIT = 5;
 
 interface MetricCardProps {
     title: string;
@@ -121,8 +119,8 @@ export default function DashboardPage() {
         }).length;
         const averagePlans = patients.length > 0 ? totalPlans / patients.length : 0;
         const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "short" });
-        const growthData = Array.from({ length: MONTHS_IN_OVERVIEW }, (_, index) => {
-            const monthStart = getMonthStart(now, index - (MONTHS_IN_OVERVIEW - 1));
+        const growthData = Array.from({ length: config.dashboard.monthsInOverview }, (_, index) => {
+            const monthStart = getMonthStart(now, index - (config.dashboard.monthsInOverview - 1));
             const monthEnd = getMonthEnd(monthStart);
             const totalAtMonthEnd = patients.filter((patient) => {
                 const createdAt = parseDate(patient.createdAt);
@@ -137,19 +135,19 @@ export default function DashboardPage() {
         const planDistribution = [
             {
                 label: "Sem plano",
-                pacientes: patients.filter((patient) => patient.qtdPlanos === 0).length,
+                pacientes: patients.filter((patient) => patient.qtdPlanos === config.dashboard.planDistribution.noPlan).length,
             },
             {
                 label: "1 plano",
-                pacientes: patients.filter((patient) => patient.qtdPlanos === 1).length,
+                pacientes: patients.filter((patient) => patient.qtdPlanos === config.dashboard.planDistribution.onePlan).length,
             },
             {
                 label: "2 planos",
-                pacientes: patients.filter((patient) => patient.qtdPlanos === 2).length,
+                pacientes: patients.filter((patient) => patient.qtdPlanos === config.dashboard.planDistribution.twoPlans).length,
             },
             {
                 label: "3 ou mais",
-                pacientes: patients.filter((patient) => patient.qtdPlanos >= 3).length,
+                pacientes: patients.filter((patient) => patient.qtdPlanos >= config.dashboard.planDistribution.threeOrMoreMinimum).length,
             },
         ];
         const recentPatients = [...patients]
@@ -158,7 +156,7 @@ export default function DashboardPage() {
                 const secondDate = parseDate(secondPatient.createdAt)?.getTime() ?? 0;
                 return secondDate - firstDate;
             })
-            .slice(0, RECENT_PATIENTS_LIMIT);
+            .slice(0, config.dashboard.recentPatientsLimit);
 
         return {
             totalPlans,

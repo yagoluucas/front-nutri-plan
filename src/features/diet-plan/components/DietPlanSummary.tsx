@@ -153,7 +153,7 @@ export default function DietPlanSummary({
             <div className="border-t border-border-subtle pt-5">
                 <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-default bg-background-subtle px-4 py-3 text-left transition-colors hover:bg-background-page"
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border-default bg-background-subtle px-4 py-3 text-left transition-colors hover:bg-background-page"
                     onClick={() =>
                         setIsMicronutrientsExpanded((currentState) => !currentState)
                     }

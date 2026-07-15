@@ -83,7 +83,7 @@ export default function FoodSearchCombobox({ onSelectFood }: FoodSearchComboboxP
                         <button
                             key={food.codigoAlimento}
                             type="button"
-                            className="w-full text-left px-4 py-3 hover:bg-surface-muted transition-colors border-b border-border-subtle last:border-b-0 focus:outline-none focus:bg-surface-muted"
+                            className="w-full cursor-pointer text-left px-4 py-3 hover:bg-surface-muted transition-colors border-b border-border-subtle last:border-b-0 focus:outline-none focus:bg-surface-muted"
                             onClick={() => handleSelect(food)}
                         >
                             <span className="block text-body-default text-content-primary font-medium truncate">

@@ -166,24 +166,22 @@ export function calculateMealMacros(foods: IMealFood[]): IMacroTotals {
     }), { ...EMPTY_TOTALS });
 }
 
-export function calculatePlanMicronutrients(meals: IMeal[]): INutrientTotal[] {
+export function calculateMealMicronutrients(foods: IMealFood[]): INutrientTotal[] {
     const totals = new Map<string, INutrientTotal>();
 
-    for (const meal of meals) {
-        for (const food of meal.alimentos) {
-            for (const nutrient of food.nutrientesCompletos) {
-                if (nutrient.valorCalculado <= 0) {
-                    continue;
-                }
+    for (const food of foods) {
+        for (const nutrient of food.nutrientesCompletos) {
+            if (nutrient.valorCalculado <= 0) {
+                continue;
+            }
 
-                const key = `${normalizeText(nutrient.nomeComponente)}|${normalizeText(nutrient.unidadeUtilizada)}`;
-                const current = totals.get(key);
+            const key = `${normalizeText(nutrient.nomeComponente)}|${normalizeText(nutrient.unidadeUtilizada)}`;
+            const current = totals.get(key);
 
-                if (current) {
-                    current.valorCalculado += nutrient.valorCalculado;
-                } else {
-                    totals.set(key, { ...nutrient });
-                }
+            if (current) {
+                current.valorCalculado += nutrient.valorCalculado;
+            } else {
+                totals.set(key, { ...nutrient });
             }
         }
     }
@@ -191,4 +189,8 @@ export function calculatePlanMicronutrients(meals: IMeal[]): INutrientTotal[] {
     return [...totals.values()].sort((first, second) => (
         first.nomeComponente.localeCompare(second.nomeComponente, "pt-BR")
     ));
+}
+
+export function calculatePlanMicronutrients(meals: IMeal[]): INutrientTotal[] {
+    return calculateMealMicronutrients(meals.flatMap((meal) => meal.alimentos));
 }

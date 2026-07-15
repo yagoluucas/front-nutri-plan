@@ -15,6 +15,7 @@ import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import FoodSearchCombobox from "./FoodSearchCombobox";
+import MealOptionNutritionSummary from "./MealOptionNutritionSummary";
 import {
   IAlimentoAutocomplete,
   IAlimentoDetail,
@@ -284,7 +285,7 @@ export default function MealEditorDialog({
           <button
             type="button"
             onClick={handleCancelClick}
-            className="rounded-lg p-1 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
+            className="cursor-pointer rounded-lg p-1 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
           >
             <X size={24} />
           </button>
@@ -357,7 +358,7 @@ export default function MealEditorDialog({
                   <button
                     type="button"
                     onClick={() => setSelectedFoodDetail(null)}
-                    className="p-1 text-content-secondary hover:text-content-primary"
+                    className="cursor-pointer p-1 text-content-secondary hover:text-content-primary"
                   >
                     <X size={18} />
                   </button>
@@ -367,7 +368,7 @@ export default function MealEditorDialog({
                   <div className="space-y-2 md:col-span-2">
                     <Label>Medida Caseira</Label>
                     <select
-                      className="h-11 w-full rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
+                      className="h-11 w-full cursor-pointer rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
                       value={medidaSelecionadaIndex}
                       onChange={(event) =>
                         setMedidaSelecionadaIndex(Number(event.target.value))
@@ -428,6 +429,13 @@ export default function MealEditorDialog({
             </div>
           )}
 
+          {alimentos.length > 0 && (
+            <MealOptionNutritionSummary
+              label="Resumo da opção principal"
+              foods={alimentos}
+            />
+          )}
+
           <div className="h-px bg-border-subtle" />
 
           <div className="space-y-4">
@@ -476,7 +484,7 @@ export default function MealEditorDialog({
                   <button
                     type="button"
                     onClick={() => setSelectedSubstitutionFoodDetail(null)}
-                    className="p-1 text-content-secondary hover:text-content-primary"
+                    className="cursor-pointer p-1 text-content-secondary hover:text-content-primary"
                   >
                     <X size={18} />
                   </button>
@@ -486,7 +494,7 @@ export default function MealEditorDialog({
                   <div className="space-y-2 md:col-span-2">
                     <Label>Medida Caseira</Label>
                     <select
-                      className="h-11 w-full rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
+                      className="h-11 w-full cursor-pointer rounded-lg border border-border-default bg-surface-default px-4 text-body-default text-content-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
                       value={substituicaoMedidaIndex}
                       onChange={(event) =>
                         setSubstituicaoMedidaIndex(Number(event.target.value))
@@ -547,6 +555,15 @@ export default function MealEditorDialog({
                 ))}
               </div>
             </div>
+          )}
+
+          {substituicaoAlimentos.length > 0 && (
+            <MealOptionNutritionSummary
+              label="Resumo da opção substituta"
+              foods={substituicaoAlimentos}
+              accent="substitution"
+              comparisonFoods={alimentos}
+            />
           )}
         </div>
 
@@ -620,7 +637,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
               <button
                 type="button"
                 onClick={() => setShowFullName((current) => !current)}
-                className="ml-1 text-caption text-brand-600 hover:underline focus:outline-none"
+                className="ml-1 cursor-pointer text-caption text-brand-600 hover:underline focus:outline-none"
               >
                 {showFullName ? "ver menos" : "ver mais"}
               </button>
@@ -633,7 +650,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-brand-50 hover:text-action-primary"
+              className="cursor-pointer rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-brand-50 hover:text-action-primary"
               title="Editar alimento"
             >
               <Pencil size={16} />
@@ -642,7 +659,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
           <button
             type="button"
             onClick={() => setShowMicros((current) => !current)}
-            className="rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
+            className="cursor-pointer rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
             title="Ver micronutrientes"
           >
             {showMicros ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -651,7 +668,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
             <button
               type="button"
               onClick={onRemove}
-              className="rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-feedback-error-bg hover:text-feedback-error-solid"
+              className="cursor-pointer rounded-lg p-1.5 text-content-secondary transition-colors hover:bg-feedback-error-bg hover:text-feedback-error-solid"
               title="Remover alimento"
             >
               <Trash2 size={16} />
@@ -671,7 +688,7 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
                 Medida Caseira
               </label>
               <select
-                className="h-10 w-full rounded-lg border border-border-default bg-surface-default px-3 text-body-small text-content-primary focus:outline-none focus:ring-2 focus:ring-action-primary-focus"
+                className="h-10 w-full cursor-pointer rounded-lg border border-border-default bg-surface-default px-3 text-body-small text-content-primary focus:outline-none focus:ring-2 focus:ring-action-primary-focus"
                 value={editMedidaIndex}
                 onChange={(event) =>
                   setEditMedidaIndex(Number(event.target.value))
@@ -704,14 +721,14 @@ function FoodListItem({ food, onRemove, onUpdate }: FoodListItemProps) {
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="rounded-lg px-3 py-1.5 text-body-small text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-body-small text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={handleSaveEdit}
-              className="flex items-center gap-1 rounded-lg bg-action-primary px-3 py-1.5 text-body-small font-semibold text-action-primary-text transition-colors hover:bg-action-primary-hover"
+              className="flex cursor-pointer items-center gap-1 rounded-lg bg-action-primary px-3 py-1.5 text-body-small font-semibold text-action-primary-text transition-colors hover:bg-action-primary-hover"
             >
               <Check size={14} />
               Confirmar
