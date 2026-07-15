@@ -175,16 +175,23 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
             </div>
           )}
 
-          <label className="absolute right-4 top-4 inline-flex cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-default px-4 py-2 text-button font-semibold text-content-primary shadow-sm transition-colors hover:bg-surface-muted focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
-            <Upload className="mr-2 h-4 w-4" />
-            Escolher capa
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={handleCoverImageChange}
-            />
-          </label>
+          <div className="absolute right-4 top-4 flex max-w-[calc(100%-2rem)] flex-col items-end gap-2">
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-default px-4 py-2 text-button font-semibold text-content-primary shadow-sm transition-colors hover:bg-surface-muted focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
+              <Upload className="mr-2 h-4 w-4" />
+              Escolher capa
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={handleCoverImageChange}
+              />
+            </label>
+            {coverImageError && (
+              <p className="max-w-xs rounded-md bg-feedback-error-bg px-3 py-2 text-right text-caption text-feedback-error-text shadow-sm">
+                {coverImageError}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="px-6 pb-6">
@@ -216,16 +223,23 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
               </div>
             </div>
 
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-action-secondary px-4 py-2 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
-              <Upload className="mr-2 h-4 w-4" />
-              Escolher foto
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={handleProfileImageChange}
-              />
-            </label>
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-action-secondary px-4 py-2 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-within:outline-none focus-within:ring-2 focus-within:ring-action-secondary-focus">
+                <Upload className="mr-2 h-4 w-4" />
+                Escolher foto
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={handleProfileImageChange}
+                />
+              </label>
+              {profileImageError && (
+                <p className="max-w-xs text-right text-caption text-feedback-error-text">
+                  {profileImageError}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

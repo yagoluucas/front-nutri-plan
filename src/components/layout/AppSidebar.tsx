@@ -36,10 +36,6 @@ export default function AppSidebar() {
         .toUpperCase();
 
     useEffect(() => {
-        setIsMobileOpen(false);
-    }, [pathname]);
-
-    useEffect(() => {
         if (!isMobileOpen) {
             return;
         }
