@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
@@ -18,9 +19,11 @@ import {
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
 import PDFGenerator from "@/src/features/diet-plan/components/PDFGenerator";
+import { deleteDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
 import { calculatePlanMicronutrients } from "@/src/features/diet-plan/utils/nutritionCalculations";
 import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
+import { queryKeys } from "@/src/lib/queryKeys";
 
 function formatDate(value?: string) {
   if (!value) {
@@ -53,6 +56,7 @@ function formatNutrientValue(value: number, unit: string) {
 export default function PacienteDetalhePage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const patientId = typeof params.id === "string" ? params.id : "";
   const { profile } = useProfile();
   const {
@@ -66,16 +70,45 @@ export default function PacienteDetalhePage() {
       : !patient && error
         ? "Nao foi possivel buscar o paciente."
         : null;
-  const [hiddenPlanIds, setHiddenPlanIds] = useState<string[]>([]);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
-  const visiblePlans =
-    patient?.planosAlimentares.filter(
-      (plan) => !hiddenPlanIds.includes(plan.id),
-    ) ?? [];
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
+  const visiblePlans = patient?.planosAlimentares ?? [];
+  const isDeletingPlan = deletingPlanId !== null;
 
-  const handleDeletePlan = (planId: string) => {
-    setHiddenPlanIds((currentIds) => [...currentIds, planId]);
-    toast.success("Plano removido da visualizacao atual.");
+  const handleDeletePlan = async (planId: string) => {
+    if (!patient || deletingPlanId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Excluir este plano alimentar permanentemente? Esta acao nao pode ser desfeita.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingPlanId(planId);
+
+    try {
+      await deleteDietPlanApi(patient.id, planId);
+      setExpandedPlanId((currentId) => (currentId === planId ? null : currentId));
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.detail(patient.id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.patients.list }),
+      ]);
+      toast.success("Plano alimentar excluido com sucesso.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel excluir o plano alimentar.",
+      );
+    } finally {
+      setDeletingPlanId(null);
+    }
   };
 
   if (isLoading) {
@@ -284,6 +317,7 @@ export default function PacienteDetalhePage() {
                           type="button"
                           variant="details"
                           className="order-last w-full sm:order-0"
+                          disabled={isDeletingPlan}
                           onClick={() =>
                             setExpandedPlanId(isExpanded ? null : plan.id)
                           }
@@ -298,13 +332,20 @@ export default function PacienteDetalhePage() {
                         <PDFGenerator
                           data={plan}
                           profile={profile}
-                          disabled={plan.refeicoes.length === 0}
+                          disabled={isDeletingPlan || plan.refeicoes.length === 0}
                           label="Baixar Plano"
                           buttonClassName="w-full px-4"
                         />
                         <Link
                           href={`/pacientes/${patient.id}/plano?planId=${plan.id}`}
-                          className="inline-flex h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
+                          aria-disabled={isDeletingPlan}
+                          tabIndex={isDeletingPlan ? -1 : 0}
+                          onClick={(event) => {
+                            if (isDeletingPlan) {
+                              event.preventDefault();
+                            }
+                          }}
+                          className={`inline-flex h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-button font-semibold text-action-secondary-text shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus ${isDeletingPlan ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-action-secondary-hover"}`}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
                           Modificar
@@ -313,10 +354,11 @@ export default function PacienteDetalhePage() {
                           type="button"
                           variant="destructive"
                           className="w-full px-4"
-                          onClick={() => handleDeletePlan(plan.id)}
+                          disabled={isDeletingPlan}
+                          onClick={() => void handleDeletePlan(plan.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
+                          {deletingPlanId === plan.id ? "Excluindo..." : "Excluir"}
                         </Button>
                       </div>
                     </div>
@@ -409,6 +451,7 @@ export default function PacienteDetalhePage() {
                 className="mt-5"
                 type="button"
                 variant="primary"
+                disabled={isDeletingPlan}
                 onClick={() => router.push(`/pacientes/${patient.id}/plano`)}
               >
                 <Plus className="mr-2" />

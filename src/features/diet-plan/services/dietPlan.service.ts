@@ -54,7 +54,11 @@ function getPayloadMessage(payload: unknown, fallback: string) {
     return typeof message === "string" && message.trim() ? message : fallback;
 }
 
-async function requestDietPlanApi(endpoint: string, init?: RequestInit): Promise<unknown> {
+async function requestDietPlanApi(
+    endpoint: string,
+    init?: RequestInit,
+    fallbackMessage = "Nao foi possivel salvar o plano alimentar.",
+): Promise<unknown> {
     const headers = new Headers(init?.headers);
 
     if (init?.body && !headers.has("Content-Type")) {
@@ -69,7 +73,7 @@ async function requestDietPlanApi(endpoint: string, init?: RequestInit): Promise
     const payload = await response.json().catch(() => null);
 
     if (!response.ok) {
-        throw new Error(getPayloadMessage(payload, "Nao foi possivel salvar o plano alimentar."));
+        throw new Error(getPayloadMessage(payload, fallbackMessage));
     }
 
     return payload;
@@ -203,4 +207,12 @@ export async function saveDietPlanApi(patientId: string, plan: IDietPlanState): 
     }
 
     return hydrateBackendPlan(parsedResponse.data.planoAlimentar, plan.paciente);
+}
+
+export async function deleteDietPlanApi(patientId: string, planId: string): Promise<void> {
+    await requestDietPlanApi(
+        `/api/pacientes/${encodeURIComponent(patientId)}/planos-alimentares/${encodeURIComponent(planId)}`,
+        { method: "DELETE" },
+        "Nao foi possivel excluir o plano alimentar.",
+    );
 }

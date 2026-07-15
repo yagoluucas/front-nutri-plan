@@ -6,6 +6,7 @@ import {
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
+import { z } from "zod";
 
 interface DietPlanRouteContext {
   params: Promise<{
@@ -13,6 +14,11 @@ interface DietPlanRouteContext {
     planId: string;
   }>;
 }
+
+const dietPlanRouteParamsSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  planId: z.string().trim().min(1).max(100),
+}).strict();
 
 function invalidPlanResponse() {
   return NextResponse.json(
@@ -36,9 +42,11 @@ async function toNextResponse(
   result: Awaited<ReturnType<typeof fetchAuthenticatedUpstream>>,
 ) {
   const payload = await readResponseBody(result.upstreamResponse);
-  const response = NextResponse.json(sanitizeAuthPayload(payload), {
-    status: result.upstreamResponse.status,
-  });
+  const response = result.upstreamResponse.status === 204
+    ? new NextResponse(null, { status: 204 })
+    : NextResponse.json(sanitizeAuthPayload(payload), {
+        status: result.upstreamResponse.status,
+      });
 
   return applyAuthenticationState(response, result);
 }
@@ -72,6 +80,37 @@ export async function PATCH(request: NextRequest, context: DietPlanRouteContext)
     return NextResponse.json(
       {
         message: "Nao foi possivel atualizar o plano alimentar.",
+        error: true,
+        statusCode: 502,
+      },
+      { status: 502 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest, context: DietPlanRouteContext) {
+  const parsedParams = dietPlanRouteParamsSchema.safeParse(await context.params);
+
+  if (!parsedParams.success) {
+    return invalidPlanResponse();
+  }
+
+  const { id, planId } = parsedParams.data;
+
+  try {
+    const result = await fetchAuthenticatedUpstream(
+      request,
+      getPlanUrl(id, planId),
+      { method: "DELETE" },
+    );
+
+    return toNextResponse(result);
+  } catch (error) {
+    console.error("Erro ao excluir plano alimentar:", error);
+
+    return NextResponse.json(
+      {
+        message: "Nao foi possivel excluir o plano alimentar.",
         error: true,
         statusCode: 502,
       },
