@@ -3,33 +3,11 @@ import { buildMealFood, calculateMealMacros, convertMeasureToGrams } from "../ut
 import { getFoodDetail } from "./foods.service";
 import type { IDietPlanState, IMeal, IMealFood, IMedidaCaseira, IPatientData } from "../types/dietPlan.types";
 import { fetchWithSession } from "../../auth/services/session.service";
-
-const backendMeasureSchema = z.object({
-    nomeMedida: z.string(),
-    total: z.number(),
-    unidadeMedida: z.string(),
-    tipoMedida: z.enum(["Caseira", "Tecnica"]),
-});
-
-const backendFoodSchema = z.object({
-    codigoAlimento: z.string(),
-    quantidade: z.number(),
-    medidaSelecionada: backendMeasureSchema,
-});
-
-const backendMealSchema = z.object({
-    nome: z.string(),
-    horario: z.string(),
-    observacoes: z.string().optional(),
-    alimentos: z.array(backendFoodSchema),
-});
-
-const backendDietPlanSchema = z.object({
-    id: z.string().optional(),
-    objetivoDoPlano: z.string().optional(),
-    observacoesGerais: z.string().optional(),
-    refeicoes: z.array(backendMealSchema),
-});
+import {
+    backendDietPlanSchema,
+    backendFoodSchema,
+    backendMealSchema,
+} from "../schemas/dietPlan.schemas";
 
 const dietPlanResponseSchema = z.object({
     planoAlimentar: backendDietPlanSchema.extend({
@@ -86,6 +64,7 @@ function optionalString(value?: string) {
 
 function mapPlanToBackend(plan: IDietPlanState): BackendDietPlan {
     return backendDietPlanSchema.parse({
+        titulo: optionalString(plan.titulo),
         objetivoDoPlano: optionalString(plan.objetivoDoPlano),
         observacoesGerais: optionalString(plan.orientacoesGerais),
         refeicoes: plan.refeicoes.map((meal) => ({
@@ -164,7 +143,7 @@ export async function hydrateBackendPlan(
 
     return {
         id: plan.id,
-        titulo: "Plano alimentar",
+        titulo: plan.titulo || "Plano alimentar",
         objetivoDoPlano: plan.objetivoDoPlano || "",
         orientacoesGerais: plan.observacoesGerais || "",
         paciente: {

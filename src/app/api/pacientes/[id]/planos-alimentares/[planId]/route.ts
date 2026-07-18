@@ -6,6 +6,7 @@ import {
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
+import { dietPlanRequestSchema } from "@/src/features/diet-plan/schemas/dietPlan.schemas";
 import { z } from "zod";
 
 interface DietPlanRouteContext {
@@ -60,6 +61,12 @@ export async function PATCH(request: NextRequest, context: DietPlanRouteContext)
     return invalidPlanResponse();
   }
 
+  const parsedBody = dietPlanRequestSchema.safeParse(requestBody);
+
+  if (!parsedBody.success) {
+    return invalidPlanResponse();
+  }
+
   const { id, planId } = await context.params;
 
   try {
@@ -69,7 +76,7 @@ export async function PATCH(request: NextRequest, context: DietPlanRouteContext)
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planoAlimentar: requestBody }),
+        body: JSON.stringify({ planoAlimentar: parsedBody.data }),
       },
     );
 

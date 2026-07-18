@@ -21,7 +21,7 @@ export default function MeuPerfilPage() {
 
     const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string, imagemCapa?: string) => {
         try {
-            const updatedProfile = await updateProfileApi(values, imagemPerfil, imagemCapa);
+            const updatedProfile = await updateProfileApi(values, imagemPerfil, imagemCapa, profile.alimentosFavoritos);
             syncProfile(updatedProfile);
             toast.success("Perfil atualizado com sucesso.");
         } catch (error) {

@@ -10,6 +10,7 @@ export const backendPacienteDraftSchema = z.object({
     sexo: z.enum(["Masculino", "Feminino", "Outro"]),
     observacoes: z.string().optional(),
     planosAlimentares: z.array(z.object({
+        titulo: z.string().optional(),
         objetivoDoPlano: z.string().optional(),
         observacoesGerais: z.string().optional(),
         refeicoes: z.array(z.object({
@@ -47,6 +48,7 @@ export function mapPatientToBackendDraft(patient: Patient): BackendPacienteDraft
         sexo: patient.sexo,
         observacoes: optionalString(patient.observacoes),
         planosAlimentares: patient.planosAlimentares.map((plan) => ({
+            titulo: optionalString(plan.titulo),
             objetivoDoPlano: plan.objetivoDoPlano || undefined,
             observacoesGerais: plan.orientacoesGerais,
             refeicoes: plan.refeicoes.map((meal) => ({

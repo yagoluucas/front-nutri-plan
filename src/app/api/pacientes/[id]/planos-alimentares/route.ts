@@ -6,6 +6,7 @@ import {
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
+import { dietPlanRequestSchema } from "@/src/features/diet-plan/schemas/dietPlan.schemas";
 
 interface DietPlansRouteContext {
   params: Promise<{
@@ -76,6 +77,12 @@ export async function POST(request: NextRequest, context: DietPlansRouteContext)
     return invalidPlanResponse();
   }
 
+  const parsedBody = dietPlanRequestSchema.safeParse(requestBody);
+
+  if (!parsedBody.success) {
+    return invalidPlanResponse();
+  }
+
   const { id } = await context.params;
 
   try {
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest, context: DietPlansRouteContext)
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planoAlimentar: requestBody }),
+        body: JSON.stringify({ planoAlimentar: parsedBody.data }),
       },
     );
 

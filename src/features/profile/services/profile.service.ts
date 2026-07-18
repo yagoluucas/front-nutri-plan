@@ -1,6 +1,8 @@
 import {
+  favoriteFoodsSchema,
   profileApiSchema,
   profileFormSchema,
+  type FavoriteFood,
   type ProfileFormValues,
 } from "../schemas/profile.schemas";
 import type { NutritionistProfile } from "../types/profile.types";
@@ -91,18 +93,49 @@ export async function updateProfileApi(
   values: ProfileFormValues,
   imagemPerfil?: string,
   imagemCapa?: string,
+  alimentosFavoritos?: FavoriteFood[],
 ): Promise<NutritionistProfile> {
   const parsedValues = profileFormSchema.parse(values);
+  const parsedFavoriteFoods =
+    alimentosFavoritos === undefined
+      ? undefined
+      : favoriteFoodsSchema.parse(alimentosFavoritos);
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
     method: "PATCH",
     body: JSON.stringify({
       ...parsedValues,
       imagemPerfil,
       imagemCapa,
+      alimentosFavoritos: parsedFavoriteFoods,
     }),
   });
 
   return parseProfilePayload(payload, "Resposta invalida ao atualizar perfil.");
+}
+
+export async function updateFavoriteFoodsApi(
+  profile: NutritionistProfile,
+  alimentosFavoritos: FavoriteFood[],
+): Promise<NutritionistProfile> {
+  const parsedValues = profileFormSchema.parse({
+    nome: profile.nome,
+    sobrenome: profile.sobrenome,
+    email: profile.email,
+    dataNascimento: profile.dataNascimento,
+    crn: profile.crn,
+  });
+  const parsedFavoriteFoods = favoriteFoodsSchema.parse(alimentosFavoritos);
+  const payload = await requestProfileApi("/api/nutricionista/perfil", {
+    method: "PATCH",
+    body: JSON.stringify({
+      ...parsedValues,
+      imagemPerfil: profile.imagemPerfil ?? profile.fotoPerfil,
+      imagemCapa: profile.imagemCapa,
+      alimentosFavoritos: parsedFavoriteFoods,
+    }),
+  });
+
+  return parseProfilePayload(payload, "Resposta invalida ao atualizar favoritos.");
 }
 
 export async function deleteProfileApi(): Promise<void> {

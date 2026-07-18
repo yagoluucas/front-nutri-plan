@@ -4,12 +4,32 @@ import {
   AUTH_TOKEN_COOKIE_NAME,
 } from "@/src/features/auth/constants";
 
+const DEFAULT_LOCAL_AUTH_API_URL = "http://localhost:5000";
+const PRODUCTION_AUTH_API_URL = "https://api-nutri-plan.onrender.com";
+
+function normalizeApiUrl(value?: string) {
+  const normalizedValue = value?.trim().replace(/\/+$/, "");
+
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return `http://${normalizedValue}`;
+}
+
+const configuredAuthApiUrl = normalizeApiUrl(process.env.API_URL);
+const configuredLocalAuthApiUrl = normalizeApiUrl(process.env.PUBLIC_LOCAL_URL);
+
 export const AUTH_API_URL =
-  process.env.API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === "production"
-    ? "https://api-nutri-plan.onrender.com"
-    : "http://localhost:5000");
+  process.env.NODE_ENV === "production"
+    ? configuredAuthApiUrl || PRODUCTION_AUTH_API_URL
+    : configuredLocalAuthApiUrl ||
+      configuredAuthApiUrl ||
+      DEFAULT_LOCAL_AUTH_API_URL;
 
 const DEFAULT_ACCESS_TOKEN_MAX_AGE = 15 * 60;
 const DEFAULT_REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;

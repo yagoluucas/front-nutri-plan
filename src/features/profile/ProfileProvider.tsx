@@ -21,12 +21,14 @@ interface ProfileContextValue {
 }
 
 const defaultProfile: NutritionistProfile = {
+    id: "",
     nome: "",
     sobrenome: "",
     email: "",
     dataNascimento: "",
     profissao: "Nutricionista",
     crn: "",
+    alimentosFavoritos: [],
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);

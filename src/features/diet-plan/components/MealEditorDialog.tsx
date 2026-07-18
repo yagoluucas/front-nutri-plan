@@ -22,6 +22,7 @@ import {
   IMeal,
   IMealFood,
 } from "../types/dietPlan.types";
+import type { FavoriteFood } from "../../profile/schemas/profile.schemas";
 import { getFoodDetail } from "../services/foods.service";
 import {
   buildMealFood,
@@ -32,8 +33,9 @@ import {
 interface MealEditorDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (meal: IMeal) => void;
+  onSave: (meal: IMeal, favoriteFoods: FavoriteFood[]) => void | Promise<void>;
   existingMeal?: IMeal | null;
+  favoriteFoods?: FavoriteFood[];
 }
 
 const DEFAULT_MEAL_NAMES = [
@@ -73,15 +75,23 @@ function createMealDraft(existingMeal?: IMeal | null) {
   };
 }
 
+function cloneFavoriteFoods(foods: FavoriteFood[]) {
+  return foods.map((food) => ({ ...food }));
+}
+
 export default function MealEditorDialog({
   isOpen,
   onClose,
   onSave,
   existingMeal,
+  favoriteFoods = [],
 }: MealEditorDialogProps) {
   const initialDraft = useMemo(
-    () => createMealDraft(existingMeal),
-    [existingMeal],
+    () => ({
+      ...createMealDraft(existingMeal),
+      favoriteFoods: cloneFavoriteFoods(favoriteFoods),
+    }),
+    [existingMeal, favoriteFoods],
   );
   const [nome, setNome] = useState(initialDraft.nome);
   const [horario, setHorario] = useState(initialDraft.horario);
@@ -107,6 +117,10 @@ export default function MealEditorDialog({
   const [substituicaoQuantidade, setSubstituicaoQuantidade] = useState("1");
   const [isLoadingSubstitutionFood, setIsLoadingSubstitutionFood] =
     useState(false);
+  const [draftFavoriteFoods, setDraftFavoriteFoods] = useState<FavoriteFood[]>(
+    initialDraft.favoriteFoods,
+  );
+  const [isSavingMeal, setIsSavingMeal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -118,6 +132,7 @@ export default function MealEditorDialog({
       alimentos,
       substituicaoObservacoes,
       substituicaoAlimentos,
+      favoriteFoods: draftFavoriteFoods,
     }) !== JSON.stringify(initialDraft);
 
   const handleCancelClick = () => {
@@ -146,6 +161,28 @@ export default function MealEditorDialog({
     } finally {
       setIsLoadingFood(false);
     }
+  };
+
+  const handleToggleFavoriteFood = (food: IAlimentoAutocomplete) => {
+    setDraftFavoriteFoods((currentFoods) => {
+      const alreadyFavorite = currentFoods.some(
+        (currentFood) => currentFood.idAlimento === food.codigoAlimento,
+      );
+
+      if (alreadyFavorite) {
+        return currentFoods.filter(
+          (currentFood) => currentFood.idAlimento !== food.codigoAlimento,
+        );
+      }
+
+      return [
+        ...currentFoods,
+        {
+          idAlimento: food.codigoAlimento,
+          nomeAlimento: food.nomeAlimento,
+        },
+      ];
+    });
   };
 
   const handleAddFood = () => {
@@ -212,7 +249,7 @@ export default function MealEditorDialog({
     );
   };
 
-  const handleSaveMeal = () => {
+  const handleSaveMeal = async () => {
     if (!nome.trim()) {
       toast.error("Informe o nome da refeição.");
       return;
@@ -247,8 +284,19 @@ export default function MealEditorDialog({
           : undefined,
     };
 
-    onSave(meal);
-    onClose();
+    try {
+      setIsSavingMeal(true);
+      await onSave(meal, draftFavoriteFoods);
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel salvar a refeicao.",
+      );
+    } finally {
+      setIsSavingMeal(false);
+    }
   };
 
   return (
@@ -337,7 +385,11 @@ export default function MealEditorDialog({
             <h3 className="text-heading-h4 font-bold text-content-primary">
               Buscar Alimento
             </h3>
-            <FoodSearchCombobox onSelectFood={handleSelectFoodFromCombobox} />
+            <FoodSearchCombobox
+              onSelectFood={handleSelectFoodFromCombobox}
+              favoriteFoods={draftFavoriteFoods}
+              onToggleFavorite={handleToggleFavoriteFood}
+            />
             {isLoadingFood && (
               <p className="animate-pulse text-body-small text-brand-600">
                 Carregando detalhes...
@@ -463,7 +515,11 @@ export default function MealEditorDialog({
               />
             </div>
 
-            <FoodSearchCombobox onSelectFood={handleSelectSubstitutionFood} />
+            <FoodSearchCombobox
+              onSelectFood={handleSelectSubstitutionFood}
+              favoriteFoods={draftFavoriteFoods}
+              onToggleFavorite={handleToggleFavoriteFood}
+            />
             {isLoadingSubstitutionFood && (
               <p className="animate-pulse text-body-small text-brand-600">
                 Carregando detalhes...
@@ -576,7 +632,7 @@ export default function MealEditorDialog({
             <Button variant="ghost" onClick={handleCancelClick}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleSaveMeal}>
+            <Button variant="primary" onClick={handleSaveMeal} disabled={isSavingMeal}>
               {existingMeal ? "Salvar Edição" : "Salvar refeição"}
             </Button>
           </div>

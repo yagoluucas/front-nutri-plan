@@ -32,11 +32,21 @@ export const profileFormSchema = z.object({
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+export const favoriteFoodSchema = z.object({
+    idAlimento: z.string().trim().min(1, "Id do alimento e obrigatorio."),
+    nomeAlimento: z.string().trim().min(1, "Nome do alimento favorito e obrigatorio."),
+}).strict();
+
+export const favoriteFoodsSchema = z.array(favoriteFoodSchema).default([]);
+
+export type FavoriteFood = z.infer<typeof favoriteFoodSchema>;
+
 export const profileApiSchema = profileFormSchema.extend({
     dataNascimento: profileApiBirthDateSchema,
     id: z.string().trim().min(1),
     imagemPerfil: optionalProfileImageSchema,
     imagemCapa: optionalProfileImageSchema,
+    alimentosFavoritos: favoriteFoodsSchema,
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
 });
@@ -44,4 +54,5 @@ export const profileApiSchema = profileFormSchema.extend({
 export const profileUpdateApiSchema = profileFormSchema.extend({
     imagemPerfil: optionalProfileImageSchema,
     imagemCapa: optionalProfileImageSchema,
+    alimentosFavoritos: favoriteFoodsSchema.optional(),
 });

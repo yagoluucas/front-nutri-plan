@@ -33,6 +33,7 @@ const apiMealSchema = z.object({
 
 const apiDietPlanSchema = z.object({
     id: z.string().trim().min(1).optional(),
+    titulo: z.string().optional(),
     objetivoDoPlano: z.string().optional(),
     observacoesGerais: z.string().optional(),
     refeicoes: z.array(apiMealSchema).default([]),

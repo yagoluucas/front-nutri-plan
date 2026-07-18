@@ -1,11 +1,7 @@
-import { ProfileFormValues } from "../schemas/profile.schemas";
+import { z } from "zod";
+import { profileApiSchema } from "../schemas/profile.schemas";
 
-export interface NutritionistProfile extends ProfileFormValues {
-    id?: string;
+export type NutritionistProfile = z.infer<typeof profileApiSchema> & {
     profissao?: string;
-    imagemPerfil?: string;
-    imagemCapa?: string;
     fotoPerfil?: string;
-    createdAt?: string;
-    updatedAt?: string;
-}
+};

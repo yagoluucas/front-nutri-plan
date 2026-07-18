@@ -8,7 +8,10 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import { toast } from "sonner";
 import { IDietPlanState, IMeal, IMacroTotals, IPatientData } from "../types/dietPlan.types";
+import type { FavoriteFood } from "../../profile/schemas/profile.schemas";
 import { NutritionistProfile } from "../../profile/types/profile.types";
+import { useProfile } from "../../profile/ProfileProvider";
+import { updateFavoriteFoodsApi } from "../../profile/services/profile.service";
 import DietPlanSummary from "./DietPlanSummary";
 import MealEditorDialog from "./MealEditorDialog";
 import PDFGenerator from "./PDFGenerator";
@@ -74,6 +77,17 @@ function hasValidMeals(plan: IDietPlanState) {
     ));
 }
 
+function favoriteFoodsAreEqual(currentFoods: FavoriteFood[], nextFoods: FavoriteFood[]) {
+    if (currentFoods.length !== nextFoods.length) {
+        return false;
+    }
+
+    return currentFoods.every((food, index) => (
+        food.idAlimento === nextFoods[index]?.idAlimento
+        && food.nomeAlimento === nextFoods[index]?.nomeAlimento
+    ));
+}
+
 export default function DietPlanForm({
     initialPlan,
     initialPatient,
@@ -82,12 +96,14 @@ export default function DietPlanForm({
     onSavePlan,
 }: DietPlanFormProps = {}) {
     const router = useRouter();
+    const { profile: contextProfile, syncProfile } = useProfile();
+    const activeProfile = profile ?? contextProfile;
     const [planState, setPlanState] = useState<IDietPlanState>(() => createInitialPlan(initialPlan, initialPatient));
     const [isMealEditorOpen, setIsMealEditorOpen] = useState(false);
     const [editingMeal, setEditingMeal] = useState<IMeal | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const favoriteFoods = activeProfile.alimentosFavoritos;
     const planIsReady = hasValidMeals(planState);
-
 
     const handlePlanFieldChange = (field: "titulo" | "objetivoDoPlano" | "orientacoesGerais", value: string) => {
         setPlanState(prev => ({
@@ -96,7 +112,16 @@ export default function DietPlanForm({
         }));
     };
 
-    const handleSaveMeal = (meal: IMeal) => {
+    const handleSaveMeal = async (meal: IMeal, nextFavoriteFoods: FavoriteFood[]) => {
+        if (!favoriteFoodsAreEqual(favoriteFoods, nextFavoriteFoods)) {
+            if (!activeProfile.id) {
+                throw new Error("Aguarde o perfil carregar antes de salvar favoritos.");
+            }
+
+            const updatedProfile = await updateFavoriteFoodsApi(activeProfile, nextFavoriteFoods);
+            syncProfile(updatedProfile);
+        }
+
         setPlanState(prev => {
             const exists = prev.refeicoes.some(r => r.id === meal.id);
             const newRefeicoes = exists
@@ -312,7 +337,7 @@ export default function DietPlanForm({
             {/* Bottom Actions Bar */}
             <div className="sticky bottom-0 z-40 rounded-lg border border-border-default bg-surface-default/95 p-4 shadow-md backdrop-blur-md">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-end items-center gap-4">
-                    <PDFGenerator data={planState} profile={profile} disabled={!planIsReady || isSaving} />
+                    <PDFGenerator data={planState} profile={activeProfile} disabled={!planIsReady || isSaving} />
                     <Button variant="primary" onClick={handleSavePlan} disabled={!planIsReady || isSaving} className="w-full sm:w-auto">
                         <Save size={18} className="mr-2" />
                         {isSaving ? "Salvando..." : "Salvar Plano"}
@@ -328,6 +353,7 @@ export default function DietPlanForm({
                     onClose={() => { setIsMealEditorOpen(false); setEditingMeal(null); }}
                     onSave={handleSaveMeal}
                     existingMeal={editingMeal}
+                    favoriteFoods={favoriteFoods}
                 />
             )}
         </div>
