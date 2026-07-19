@@ -31,8 +31,9 @@ async function requestProfileApi(
   init?: RequestInit,
 ): Promise<unknown> {
   const headers = new Headers(init?.headers);
+  const isFormDataBody = init?.body instanceof FormData;
 
-  if (init?.body && !headers.has("Content-Type")) {
+  if (init?.body && !isFormDataBody && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -81,6 +82,45 @@ function parseProfilePayload(
   return toProfile(parsedResponse.data.nutricionista);
 }
 
+function createProfileFormData(
+  values: ProfileFormValues,
+  alimentosFavoritos?: FavoriteFood[],
+  imagemPerfil?: File,
+  imagemCapa?: File,
+) {
+  const formData = new FormData();
+
+  formData.append("nome", values.nome);
+  formData.append("sobrenome", values.sobrenome);
+  formData.append("email", values.email);
+  formData.append("dataNascimento", values.dataNascimento);
+  formData.append("crn", values.crn);
+
+  if (alimentosFavoritos !== undefined) {
+    formData.append("alimentosFavoritos", JSON.stringify(alimentosFavoritos));
+  }
+
+  if (imagemPerfil) {
+    formData.append("imagemPerfil", imagemPerfil);
+  }
+
+  if (imagemCapa) {
+    formData.append("imagemCapa", imagemCapa);
+  }
+
+  return formData;
+}
+
+function createProfileJsonPayload(
+  values: ProfileFormValues,
+  alimentosFavoritos?: FavoriteFood[],
+) {
+  return JSON.stringify({
+    ...values,
+    alimentosFavoritos,
+  });
+}
+
 export async function getProfileApi(): Promise<NutritionistProfile> {
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
     method: "GET",
@@ -91,8 +131,8 @@ export async function getProfileApi(): Promise<NutritionistProfile> {
 
 export async function updateProfileApi(
   values: ProfileFormValues,
-  imagemPerfil?: string,
-  imagemCapa?: string,
+  imagemPerfil?: File,
+  imagemCapa?: File,
   alimentosFavoritos?: FavoriteFood[],
 ): Promise<NutritionistProfile> {
   const parsedValues = profileFormSchema.parse(values);
@@ -100,14 +140,17 @@ export async function updateProfileApi(
     alimentosFavoritos === undefined
       ? undefined
       : favoriteFoodsSchema.parse(alimentosFavoritos);
+  const hasImageFiles = Boolean(imagemPerfil || imagemCapa);
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
     method: "PATCH",
-    body: JSON.stringify({
-      ...parsedValues,
-      imagemPerfil,
-      imagemCapa,
-      alimentosFavoritos: parsedFavoriteFoods,
-    }),
+    body: hasImageFiles
+      ? createProfileFormData(
+          parsedValues,
+          parsedFavoriteFoods,
+          imagemPerfil,
+          imagemCapa,
+        )
+      : createProfileJsonPayload(parsedValues, parsedFavoriteFoods),
   });
 
   return parseProfilePayload(payload, "Resposta invalida ao atualizar perfil.");
@@ -127,12 +170,7 @@ export async function updateFavoriteFoodsApi(
   const parsedFavoriteFoods = favoriteFoodsSchema.parse(alimentosFavoritos);
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
     method: "PATCH",
-    body: JSON.stringify({
-      ...parsedValues,
-      imagemPerfil: profile.imagemPerfil ?? profile.fotoPerfil,
-      imagemCapa: profile.imagemCapa,
-      alimentosFavoritos: parsedFavoriteFoods,
-    }),
+    body: createProfileJsonPayload(parsedValues, parsedFavoriteFoods),
   });
 
   return parseProfilePayload(payload, "Resposta invalida ao atualizar favoritos.");

@@ -1,13 +1,13 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
-import Image from "next/image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, ImageIcon, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
+import { getNameInitials } from "@/src/utils/getNameInitials";
 import {
   profileFormSchema,
   ProfileFormValues,
@@ -18,55 +18,42 @@ interface ProfileFormProps {
   profile: NutritionistProfile;
   onSubmit: (
     values: ProfileFormValues,
-    imagemPerfil?: string,
-    imagemCapa?: string,
+    imagemPerfil?: File,
+    imagemCapa?: File,
   ) => void | Promise<void>;
 }
 
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_PROFILE_IMAGE_SIZE = 1 * 1024 * 1024;
+const MAX_COVER_IMAGE_SIZE = 2 * 1024 * 1024;
 
-function getInitials(name: string) {
-  const nameArray = name.trim().split(/\s+/);
-
-  const initials = nameArray
-    .slice(0, nameArray.length - 1)
-    .map((item) => item[0])
-    .join("")
-    .toUpperCase();
-
-  return initials || "NP";
+function formatImageSizeLimit(maxSize: number) {
+  return maxSize / (1024 * 1024);
 }
 
-function validateImageFile(file: File) {
+function validateImageFile(file: File, maxSize: number, imageLabel: string) {
   if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
     return "Use uma imagem JPG, PNG ou WebP.";
   }
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    return "A imagem deve ter ate 2 MB.";
+  if (file.size > maxSize) {
+    return `${imageLabel} deve ter ate ${formatImageSizeLimit(maxSize)} MB.`;
   }
 
   return null;
 }
 
-function readImageAsBase64(file: File, onLoad: (image: string) => void) {
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    if (typeof reader.result === "string") {
-      onLoad(reader.result);
-    }
-  };
-
-  reader.readAsDataURL(file);
-}
-
 export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
-  const [selectedProfileImage, setSelectedProfileImage] = useState<
+  const [selectedProfileImageFile, setSelectedProfileImageFile] = useState<
+    File | undefined
+  >();
+  const [selectedCoverImageFile, setSelectedCoverImageFile] = useState<
+    File | undefined
+  >();
+  const [selectedProfileImagePreview, setSelectedProfileImagePreview] = useState<
     string | undefined
   >();
-  const [selectedCoverImage, setSelectedCoverImage] = useState<
+  const [selectedCoverImagePreview, setSelectedCoverImagePreview] = useState<
     string | undefined
   >();
   const [profileImageError, setProfileImageError] = useState<string | null>(
@@ -74,8 +61,8 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
   );
   const [coverImageError, setCoverImageError] = useState<string | null>(null);
   const profileImagePreview =
-    selectedProfileImage ?? profile.imagemPerfil ?? profile.fotoPerfil;
-  const coverImagePreview = selectedCoverImage ?? profile.imagemCapa;
+    selectedProfileImagePreview ?? profile.imagemPerfil ?? profile.fotoPerfil;
+  const coverImagePreview = selectedCoverImagePreview ?? profile.imagemCapa;
   const fullName = `${profile.nome} ${profile.sobrenome}`.trim();
   const {
     register,
@@ -92,7 +79,7 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
       crn: profile.crn,
     },
   });
-  const initials = getInitials(fullName);
+  const initials = getNameInitials(fullName);
 
   useEffect(() => {
     reset({
@@ -104,6 +91,22 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
     });
   }, [profile, reset]);
 
+  useEffect(() => {
+    return () => {
+      if (selectedProfileImagePreview) {
+        URL.revokeObjectURL(selectedProfileImagePreview);
+      }
+    };
+  }, [selectedProfileImagePreview]);
+
+  useEffect(() => {
+    return () => {
+      if (selectedCoverImagePreview) {
+        URL.revokeObjectURL(selectedCoverImagePreview);
+      }
+    };
+  }, [selectedCoverImagePreview]);
+
   const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setProfileImageError(null);
@@ -112,15 +115,22 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
       return;
     }
 
-    const error = validateImageFile(file);
+    const error = validateImageFile(
+      file,
+      MAX_PROFILE_IMAGE_SIZE,
+      "A foto de perfil",
+    );
 
     if (error) {
       setProfileImageError(error);
+      setSelectedProfileImageFile(undefined);
+      setSelectedProfileImagePreview(undefined);
       event.target.value = "";
       return;
     }
 
-    readImageAsBase64(file, setSelectedProfileImage);
+    setSelectedProfileImageFile(file);
+    setSelectedProfileImagePreview(URL.createObjectURL(file));
   };
 
   const handleCoverImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -131,21 +141,30 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
       return;
     }
 
-    const error = validateImageFile(file);
+    const error = validateImageFile(
+      file,
+      MAX_COVER_IMAGE_SIZE,
+      "A imagem de capa",
+    );
 
     if (error) {
       setCoverImageError(error);
+      setSelectedCoverImageFile(undefined);
+      setSelectedCoverImagePreview(undefined);
       event.target.value = "";
       return;
     }
 
-    readImageAsBase64(file, setSelectedCoverImage);
+    setSelectedCoverImageFile(file);
+    setSelectedCoverImagePreview(URL.createObjectURL(file));
   };
 
   const submitProfile = async (values: ProfileFormValues) => {
-    await onSubmit(values, profileImagePreview, coverImagePreview);
-    setSelectedProfileImage(undefined);
-    setSelectedCoverImage(undefined);
+    await onSubmit(values, selectedProfileImageFile, selectedCoverImageFile);
+    setSelectedProfileImageFile(undefined);
+    setSelectedCoverImageFile(undefined);
+    setSelectedProfileImagePreview(undefined);
+    setSelectedCoverImagePreview(undefined);
   };
 
   return (
@@ -156,13 +175,11 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
       <section className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-sm">
         <div className="relative h-56 bg-surface-muted sm:h-64">
           {coverImagePreview ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={coverImagePreview}
               alt="Imagem de capa"
-              fill
-              sizes="(min-width: 1280px) 1216px, calc(100vw - 48px)"
-              className="object-cover"
-              priority
+              className="h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-content-muted">
@@ -199,12 +216,11 @@ export default function ProfileForm({ profile, onSubmit }: ProfileFormProps) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-surface-default bg-brand-100 text-heading-h2 font-bold text-action-primary shadow-sm">
                 {profileImagePreview ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={profileImagePreview}
                     alt="Foto de perfil"
-                    fill
-                    sizes="128px"
-                    className="object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   initials

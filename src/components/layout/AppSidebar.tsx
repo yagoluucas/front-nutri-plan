@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, CookingPot, Leaf, Menu, User, Users, X } from "lucide-react";
 import LogoutButton from "@/src/features/auth/components/LogoutButton";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
+import { getNameInitials } from "@/src/utils/getNameInitials";
 
 const navigationItems = [
     { href: "/dashboard", label: "Inicio", icon: BarChart3 },
@@ -27,13 +27,9 @@ export default function AppSidebar() {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { profile } = useProfile();
     const profileImage = profile.fotoPerfil ?? profile.imagemPerfil;
-    const profileLabel = [profile.nome, profile.sobrenome].filter(Boolean).join(" ").trim() || "Nutricionista";
-    const profileInitials = (profileLabel || "NP")
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((item) => item[0])
-        .join("")
-        .toUpperCase();
+    const profileName = [profile.nome, profile.sobrenome].filter(Boolean).join(" ").trim();
+    const profileLabel = profileName || "Nutricionista";
+    const profileInitials = getNameInitials(profileName);
 
     useEffect(() => {
         if (!isMobileOpen) {
@@ -141,11 +137,10 @@ export default function AppSidebar() {
                     <div className="mb-3 flex h-14 min-w-0 items-center gap-3 overflow-hidden rounded-md bg-background-subtle px-3">
                         <span className="flex w-8 shrink-0 justify-center">
                             {profileImage ? (
-                                <Image
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
                                     src={profileImage}
                                     alt="Foto de perfil"
-                                    width={32}
-                                    height={32}
                                     className="h-8 w-8 rounded-full object-cover"
                                 />
                             ) : (

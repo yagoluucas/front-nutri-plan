@@ -19,7 +19,7 @@ export default function MeuPerfilPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: string, imagemCapa?: string) => {
+    const handleSubmit = async (values: ProfileFormValues, imagemPerfil?: File, imagemCapa?: File) => {
         try {
             const updatedProfile = await updateProfileApi(values, imagemPerfil, imagemCapa, profile.alimentosFavoritos);
             syncProfile(updatedProfile);

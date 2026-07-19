@@ -1,17 +1,21 @@
 import { z } from "zod";
 
-const profileImageDataUrlSchema = z
+const profileImageSrcSchema = z
     .string()
     .trim()
-    .regex(
-        /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/,
-        "Imagem invalida. Use JPG, PNG ou WebP.",
-    )
-    .max(2_800_000, "Imagem muito grande.");
+    .min(1, "Imagem invalida.")
+    .max(2_800_000, "Imagem muito grande.")
+    .refine((value) => {
+        if (/^https?:\/\/[^\s]+$/i.test(value)) {
+            return true;
+        }
+
+        return value.startsWith("/");
+    }, "Imagem invalida.");
 
 export const optionalProfileImageSchema = z.preprocess(
     (value) => value === null || value === "" ? undefined : value,
-    profileImageDataUrlSchema.optional(),
+    profileImageSrcSchema.optional(),
 );
 
 const profileFormBirthDateSchema = z.string()
@@ -51,8 +55,6 @@ export const profileApiSchema = profileFormSchema.extend({
     updatedAt: z.string().optional(),
 });
 
-export const profileUpdateApiSchema = profileFormSchema.extend({
-    imagemPerfil: optionalProfileImageSchema,
-    imagemCapa: optionalProfileImageSchema,
+export const profileUpdateApiSchema = profileFormSchema.partial().extend({
     alimentosFavoritos: favoriteFoodsSchema.optional(),
 });
