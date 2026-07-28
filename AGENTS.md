@@ -1,41 +1,56 @@
 # AGENTS.md — Nutri Plan Front-end
 
-## Informações gerais
+## 1. Objetivo
 
-Este repositório contém o front-end do Nutri Plan.
+Este arquivo define as regras obrigatórias para agentes que alterem o front-end do Nutri Plan.
 
-O projeto é desenvolvido com Next.js, React, TypeScript, Tailwind CSS, daisyUI, Zod, React Hook Form, TanStack React Query, Sonner, Recharts e geração de PDF com `@react-pdf/renderer`.
+O projeto deve permanecer:
 
-O front-end deve seguir um visual clean, consistente e alinhado ao Design System já existente no projeto.
+- seguro;
+- previsível;
+- fácil de revisar;
+- simples de evoluir;
+- coerente com o domínio de nutrição;
+- responsivo em desktop e mobile;
+- alinhado ao Design System existente.
 
-O desenvolvimento deve ser desktop-first, pois o sistema será majoritariamente utilizado em desktop. Isso não significa ignorar mobile: as telas também devem permanecer responsivas e utilizáveis em dispositivos menores.
+Aplique DRY, DRI, SOLID, Domain-Driven Design e Clean Code de forma prática. Não crie abstrações, camadas, classes ou arquivos apenas para demonstrar um padrão arquitetural.
 
-## Objetivo do projeto
+## 2. Contexto do projeto
 
-O Nutri Plan oferece interface para autenticação, gerenciamento de pacientes, criação de plano alimentar, busca de alimentos, cálculo/visualização nutricional e geração de plano alimentar em PDF.
+O Nutri Plan é uma aplicação voltada à rotina de nutricionistas. O front-end oferece interface para:
+
+- autenticação;
+- gerenciamento de pacientes;
+- criação e edição de planos alimentares;
+- organização de refeições;
+- busca de alimentos;
+- cálculo e visualização nutricional;
+- geração de PDF;
+- indicadores e gráficos.
 
 O front-end consome a API do Nutri Plan.
 
-Rotas protegidas não devem ser chamadas diretamente pelo browser. Sempre que houver autenticação envolvida, utilize rotas internas do Next.js como proxy server-side.
+Rotas protegidas não devem ser chamadas diretamente pelo browser. Quando houver autenticação, utilize rotas internas do Next.js como proxy server-side.
 
-## Stack principal
+## 3. Stack principal
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
-* daisyUI
-* Zod
-* React Hook Form
-* TanStack React Query
-* Sonner
-* Recharts
-* @react-pdf/renderer
-* lucide-react
+- Next.js;
+- React;
+- TypeScript;
+- Tailwind CSS;
+- daisyUI;
+- Zod;
+- React Hook Form;
+- TanStack React Query;
+- Sonner;
+- Recharts;
+- `@react-pdf/renderer`;
+- `lucide-react`.
 
-## Estrutura real do projeto
+Não introduza uma nova biblioteca quando a stack existente já resolver o problema adequadamente.
 
-A estrutura principal segue o padrão:
+## 4. Estrutura real do projeto
 
 ```txt
 src/
@@ -52,59 +67,103 @@ docs/
 public/
 ```
 
-Pontos importantes:
+Responsabilidades principais:
 
-```txt
-src/app
+- `src/app`: App Router, páginas, layouts, providers e rotas internas de API.
+- `src/components`: componentes compartilhados e genéricos de UI ou layout.
+- `src/features/auth`: autenticação, formulários, schemas, serviços e constantes.
+- `src/features/diet-plan`: alimentos, refeições, plano alimentar, cálculos, visualizações e PDF.
+
+Não assuma que existem `src/features/foods` ou `src/features/meal-plans`. No projeto atual, dieta e alimentos pertencem a `src/features/diet-plan`.
+
+Antes de criar uma pasta, confirme que a estrutura existente realmente não possui um local adequado.
+
+## 5. Ordem de prioridade
+
+Quando regras entrarem em conflito, siga esta ordem:
+
+1. segurança e privacidade;
+2. correção das regras de negócio;
+3. compatibilidade dos contratos com o back-end;
+4. escopo solicitado;
+5. arquitetura e manutenibilidade;
+6. acessibilidade e experiência do usuário;
+7. desempenho;
+8. preferência estética ou conveniência.
+
+Nunca sacrifique segurança ou correção para reduzir linhas de código.
+
+## 6. Protocolo obrigatório de alteração
+
+Toda alteração deve seguir este fluxo:
+
+1. entender exatamente o pedido;
+2. localizar os arquivos diretamente relacionados;
+3. identificar contratos, consumidores e dependências afetados;
+4. alterar somente o necessário;
+5. revisar o diff;
+6. executar validações proporcionais ao risco;
+7. informar o que foi alterado e o que não foi validado.
+
+### 6.1 Alterações pequenas e cirúrgicas
+
+É proibido apagar e reescrever um arquivo inteiro quando uma alteração localizada resolver o problema.
+
+Ao modificar um arquivo:
+
+- preserve conteúdo não relacionado;
+- preserve comentários úteis;
+- preserve a ordenação existente quando ela não fizer parte do problema;
+- preserve o estilo adotado naquele arquivo;
+- preserve encoding e fim de linha;
+- não reorganize imports sem necessidade;
+- não renomeie símbolos fora do escopo;
+- não aplique formatação global para corrigir poucas linhas;
+- não substitua código equivalente apenas por preferência pessoal.
+
+Revise sempre:
+
+```bash
+git diff --check
+git diff --stat
+git diff -- caminho/do/arquivo
 ```
 
-Contém App Router, páginas, layouts, rotas internas de API e providers.
+Se o arquivo inteiro aparecer como alterado por formatação, encoding ou fim de linha, reverta e reaplique a mudança de forma localizada.
 
-```txt
-src/components
-```
+Não execute formatadores no repositório inteiro sem solicitação explícita.
 
-Contém componentes reutilizáveis, incluindo componentes de layout e UI.
+### 6.2 Controle de escopo
 
-```txt
-src/features/auth
-```
+Não altere arquivos fora do escopo apenas para “melhorar” o projeto.
 
-Contém autenticação, formulários, schemas, services e constantes relacionadas a login/cadastro/logout.
+Não misture:
 
-```txt
-src/features/diet-plan
-```
+- correção pontual com refatoração ampla;
+- correção de segurança com feature nova;
+- mudança visual com reorganização arquitetural;
+- atualização de contrato com renomeação generalizada.
 
-Contém a principal feature de plano alimentar, incluindo busca de alimentos, edição de refeições, geração de PDF e componentes do fluxo de dieta.
+Problemas fora do escopo devem ser citados no resumo final, não corrigidos silenciosamente.
 
-Não assumir que existe `src/features/foods` ou `src/features/meal-plans`. No projeto atual, a feature real relacionada à dieta/alimentos está em `src/features/diet-plan`.
+## 7. Leitura eficiente do projeto
 
-## Como gastar menos tokens ao trabalhar neste projeto
+Priorize buscas objetivas com `rg`, leitura de arquivos específicos e inspeção incremental.
 
-Antes de alterar qualquer arquivo, entenda o escopo real da tarefa.
+Nunca leia `node_modules` nem pastas geradas:
 
-Não leia arquivos desnecessários. Priorize buscas objetivas com `rg`, leitura de arquivos específicos e inspeção incremental.
+- `.next`;
+- `dist`;
+- `build`;
+- `coverage`;
+- `.turbo`;
+- `.vercel`.
 
-Nunca leia a pasta `node_modules`.
+Consulte `package.json` e `package-lock.json` quando precisar confirmar dependências ou comandos.
 
-Evite também ler pastas geradas automaticamente, como:
+Não faça varreduras amplas para uma alteração localizada.
 
-* `.next`
-* `dist`
-* `build`
-* `coverage`
-* `.turbo`
-* `.vercel`
-
-Para entender as bibliotecas usadas, consulte:
-
-* `package.json`
-* `package-lock.json`
-
-Não faça varreduras amplas no projeto inteiro se a alteração for localizada.
-
-Use buscas específicas:
+Buscas úteis:
 
 ```bash
 rg "localStorage|sessionStorage|Authorization|nutriplan_token" src
@@ -115,80 +174,410 @@ rg "z.object|safeParse|parse|zodResolver" src
 rg "cookies\\(|NextResponse|route.ts" src/app
 ```
 
-Não reescreva componentes inteiros quando uma alteração pequena resolver o problema.
+## 8. DRI e responsabilidade pela mudança
 
-Não altere arquivos fora do escopo só para “melhorar” o código.
+DRI significa Directly Responsible Individual. Não é uma regra de deduplicação; a regra de deduplicação é DRY.
 
-Se encontrar problemas não relacionados ao pedido atual, registre no resumo final, mas não corrija sem necessidade.
+O agente é diretamente responsável por:
 
-## Comandos principais
+- entender o impacto da mudança;
+- preservar contratos existentes;
+- validar o comportamento alterado;
+- não deixar migração parcial;
+- não criar `TODO` para evitar uma correção necessária;
+- declarar limitações e validações não executadas.
 
-Use os comandos abaixo antes de finalizar qualquer alteração relevante:
+Uma mudança não está concluída apenas porque compila. Ela deve estar coerente com o domínio, os contratos, a segurança e a interface.
 
-```bash
-npm install
-npm run lint
-npm run build
+## 9. DRY sem abstração prematura
+
+Evite duplicar:
+
+- regras de negócio;
+- schemas Zod;
+- tipos derivados de contratos;
+- nomes de campos;
+- formatos de payload;
+- normalizações;
+- query keys;
+- construção de URLs;
+- mapeamentos entre API e domínio;
+- funções que executam a mesma transformação;
+- componentes visualmente idênticos.
+
+Quando códigos forem parecidos, confirme primeiro se representam a mesma regra. Regras diferentes podem evoluir de formas diferentes.
+
+Extraia uma abstração quando:
+
+- a mesma regra precisa permanecer consistente em múltiplos pontos;
+- a duplicação já provocou divergência;
+- o contrato é compartilhado entre formulário, rota, service ou mapper;
+- a abstração possui nome claro no domínio;
+- a reutilização reduz complexidade em vez de escondê-la.
+
+Não crie helper genérico para um único uso.
+
+Prefira duplicação pequena e temporária a uma abstração incorreta.
+
+## 10. SOLID aplicado ao front-end
+
+### 10.1 Responsabilidade única
+
+Cada módulo deve ter uma responsabilidade principal:
+
+- componente apresenta e captura interação;
+- hook coordena estado e caso de uso da interface;
+- service realiza comunicação;
+- schema valida contrato;
+- mapper converte DTO em modelo interno;
+- utilitário executa transformação pura;
+- rota interna trata autenticação, validação e proxy server-side.
+
+Não concentre chamada de API, validação, regra nutricional, transformação, renderização extensa e geração de PDF no mesmo componente.
+
+### 10.2 Aberto para extensão, fechado para modificação
+
+Prefira composição, configuração, variantes e schemas derivados.
+
+Não quebre consumidores existentes de um componente compartilhado para atender um único caso.
+
+Ao adicionar uma variante, preserve o comportamento padrão, salvo mudança incompatível explicitamente solicitada.
+
+### 10.3 Substituição de contratos
+
+Implementações substituíveis devem preservar o contrato esperado.
+
+Não altere silenciosamente:
+
+- entradas válidas;
+- formato de retorno;
+- semântica de propriedades;
+- comportamento de erro.
+
+### 10.4 Segregação de interfaces
+
+Prefira props e contratos pequenos e específicos.
+
+Não passe objetos grandes quando o componente usa poucos campos.
+
+Use `.pick()` ou `.omit()` em schemas para representar recortes de um contrato, em vez de duplicar campos manualmente.
+
+### 10.5 Inversão de dependência
+
+UI e domínio não devem depender desnecessariamente do formato externo da API.
+
+Prefira:
+
+- services com responsabilidade clara;
+- mappers entre DTO e modelo interno;
+- funções puras para regras e transformações;
+- componentes que recebem dados e callbacks;
+- dependências recebidas por parâmetro quando isso melhora testes.
+
+Não introduza container de injeção de dependência sem benefício comprovado.
+
+## 11. Domain-Driven Design
+
+Organize o código pela linguagem e pelas capacidades do negócio, não apenas por tipo técnico.
+
+Use nomes consistentes do domínio, como:
+
+- paciente;
+- plano alimentar;
+- refeição;
+- alimento;
+- porção;
+- medida caseira;
+- nutriente;
+- cálculo nutricional;
+- nutricionista.
+
+Evite nomes genéricos como `data`, `item`, `object`, `info`, `handleStuff` e `processData` quando existir um termo mais preciso.
+
+### 11.1 Limites de contexto
+
+Uma feature deve concentrar seus próprios:
+
+- schemas;
+- services;
+- hooks;
+- componentes específicos;
+- regras;
+- mappers;
+- constantes.
+
+Evite importar arquivos internos de uma feature em outra sem necessidade explícita.
+
+Elementos realmente genéricos podem ficar em `src/components`, `src/hooks`, `src/lib` ou `src/utils`.
+
+Não mova regra de plano alimentar para `utils` apenas para reutilizá-la. Mantenha regras próximas do domínio responsável.
+
+### 11.2 DTO e modelo interno
+
+Não trate automaticamente a resposta do back-end como o modelo ideal da interface.
+
+Quando o formato externo não for adequado à UI, use:
+
+1. schema do DTO;
+2. validação da resposta;
+3. mapper explícito;
+4. modelo interno coerente com a interface.
+
+Adapte mudanças do back-end em um ponto central, não em vários componentes.
+
+## 12. Clean Code
+
+- use nomes descritivos e consistentes;
+- prefira funções pequenas com responsabilidade clara;
+- use retornos antecipados para reduzir aninhamento;
+- elimine condições duplicadas;
+- evite strings e números mágicos;
+- evite booleanos ambíguos como parâmetros posicionais;
+- não esconda efeitos colaterais;
+- prefira transformações imutáveis quando simples;
+- não silencie erros;
+- não use `catch` vazio;
+- não use `any` para contornar tipagem;
+- não use casts para esconder contratos incompatíveis;
+- comente decisões e regras, não sintaxe óbvia.
+
+Use `unknown` para dados externos ainda não validados.
+
+Quando `any` for inevitável, limite o escopo e justifique.
+
+## 13. Contratos de dados e Zod
+
+Zod é a fonte de verdade para dados validáveis em runtime.
+
+Devem ser definidos primeiro como schema Zod:
+
+- payloads enviados ao back-end;
+- respostas recebidas da API;
+- parâmetros de rota e query string;
+- dados de formulário;
+- eventos externos;
+- variáveis de ambiente;
+- dados importados de arquivo;
+- estados serializáveis com contrato relevante.
+
+Derive tipos TypeScript:
+
+```ts
+export const patientSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+});
+
+export type Patient = z.infer<typeof patientSchema>;
 ```
 
-Quando a alteração envolver autenticação, rotas protegidas ou alimentos, rode também:
+Não crie `interface` ou `type` manual duplicando um schema.
 
-```bash
-rg "localStorage|sessionStorage|persistAuthToken|clearAuthToken|getAuthHeader" src
-rg "Authorization" src
-rg "NEXT_PUBLIC_API_URL|API_URL" src
-rg "alimentos|autocomplete|foodName|foodCode" src
+Interfaces manuais são permitidas apenas para estruturas sem validação de runtime, como:
+
+- props de componentes;
+- callbacks;
+- contextos React;
+- tipos genéricos;
+- adapters de bibliotecas;
+- contratos puramente comportamentais.
+
+Mesmo nesses casos, não replique manualmente campos de entidades já tipadas.
+
+### 13.1 Composição de schemas
+
+Zod não deve ser tratado como hierarquia tradicional de classes.
+
+Para compartilhar ou adaptar contratos, prefira:
+
+- `.extend()`;
+- `.merge()`;
+- `.pick()`;
+- `.omit()`;
+- `.partial()`;
+- `.required()`;
+- `.transform()`;
+- `.refine()` e `.superRefine()`;
+- `z.union()`;
+- `z.discriminatedUnion()`;
+- schemas base reutilizáveis.
+
+Exemplo:
+
+```ts
+const patientBaseSchema = z.object({
+  name: z.string().trim().min(1),
+  email: z.string().trim().email(),
+});
+
+export const createPatientSchema = patientBaseSchema.extend({
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export const updatePatientSchema = createPatientSchema.partial();
+
+export const patientResponseSchema = createPatientSchema.extend({
+  id: z.string().min(1),
+  createdAt: z.string().datetime(),
+});
 ```
 
-## Regras gerais de desenvolvimento
+Não crie classe base ou herança apenas para compartilhar campos.
 
-Preserve a estrutura existente do projeto.
+Em React, TypeScript e Zod, prefira composição a herança.
 
-Não reescreva componentes inteiros sem necessidade.
+Use classes somente quando comportamento, invariantes e ciclo de vida realmente justificarem instâncias. Não use classes como substituto de objetos tipados e funções puras.
 
-Prefira alterações pequenas, claras e fáceis de revisar.
+### 13.2 Contratos com o back-end
 
-Use TypeScript de forma estrita sempre que possível.
+Todo ponto de integração deve possuir, quando aplicável:
 
-Siga DRY (Don't Repeat Yourself) para regras de negócio, formatos de payload, schemas, mapeamentos e nomes de campos. Quando um mesmo contrato for consumido por formulário, service, rota interna ou mapper, defina-o uma única vez em schema/helper reutilizável e importe-o nos demais pontos. Nunca replique manualmente o formato de uma entidade em vários arquivos.
+- schema de requisição;
+- schema de resposta;
+- schema de erro controlado;
+- mapper entre DTO e modelo interno;
+- tratamento explícito de ausência, nulabilidade e opcionais;
+- definição de unidades e formatos de data;
+- comportamento para resposta incompatível.
 
-Zod é a fonte de verdade obrigatória para todo contrato de dados validável: payloads, respostas de API, entidades persistidas, estados de formulário e parâmetros de rota. Tipos TypeScript desses contratos devem sempre ser derivados com `z.infer<typeof schema>`; interfaces manuais ficam restritas a props de componentes, contextos React e tipos genéricos que não representem dados validáveis.
+Dados de rede começam como `unknown` e devem ser validados antes do uso:
 
-Não introduza dependências novas sem necessidade real.
+```ts
+const payload: unknown = await response.json();
+const parsed = patientResponseSchema.safeParse(payload);
 
-Não remova validações existentes sem justificar.
+if (!parsed.success) {
+  throw new Error("Resposta inválida da API.");
+}
 
-Não altere comportamento visual fora do escopo solicitado.
+return parsed.data;
+```
 
-Não misture refatoração ampla com correção pontual.
+Não use cast para fingir validação:
 
-Não implemente features extras durante correções de segurança.
+```ts
+const patient = (await response.json()) as PatientResponse;
+```
 
-Não use `any` sem necessidade.
+Quando um campo do back-end mudar:
 
-Se `any` for inevitável, limite o escopo e justifique.
+1. atualize o schema responsável;
+2. atualize o mapper, quando existir;
+3. localize todos os consumidores;
+4. ajuste mocks e testes;
+5. valide compatibilidade;
+6. não replique o campo manualmente em vários arquivos.
 
-Não silencie erros sem tratamento.
+Não crie fallback silencioso para mascarar contrato quebrado. `optional`, `default` e compatibilidade retroativa só devem ser usados quando forem válidos para a regra de negócio.
 
-Não crie helpers genéricos demais para uso único.
+### 13.3 Boas práticas de schemas
 
-Use nomes descritivos para funções, variáveis, schemas e serviços.
+- use nomes claros;
+- normalize strings com `.trim()` quando apropriado;
+- rejeite vazio em campo obrigatório;
+- valide paginação, busca e filtros;
+- use `.strict()` quando campos extras não forem permitidos;
+- represente estados fechados com `z.enum()` ou literais;
+- use `z.discriminatedUnion()` para variantes com discriminador;
+- não duplique regra em schemas diferentes;
+- mantenha schemas próximos da feature responsável;
+- evite arquivo global gigantesco sem coesão.
 
-Evite comentários óbvios. Comente apenas decisões importantes, regras de negócio ou pontos de segurança.
+Locais existentes:
 
-Toda interface ou contrato de dados da aplicacao deve ser construido primeiro com schema Zod no arquivo de interface/types ou schemas correspondente.
+```txt
+src/features/auth/schemas/auth.schemas.ts
+src/features/diet-plan/schemas
+src/lib/validations
+```
 
-Tipos TypeScript devem ser inferidos a partir dos schemas com `z.infer<typeof Schema>`. Evite criar `interface` ou `type` manual duplicando o mesmo contrato que o Zod ja descreve.
+Não crie nova estrutura se a feature já tiver padrão claro.
 
-Use `interface` manual apenas quando o tipo nao representar um payload validavel pelo Zod, como props de componente, contexto React, tipos genericos de bibliotecas ou adaptacoes estritamente necessarias.
+### 13.4 React Hook Form e Zod
 
-## Design System
+Para formulários:
 
-Siga o Design System existente do projeto.
+1. crie ou reutilize o schema;
+2. derive o tipo com `z.infer`;
+3. use o resolver do Zod;
+4. normalize dados em um único ponto;
+5. mostre mensagens amigáveis;
+6. não duplique a validação no JSX;
+7. não exponha detalhes técnicos.
 
-Priorize tokens semânticos definidos no projeto em vez de classes genéricas do Tailwind.
+Validação no front-end melhora a experiência, mas não substitui validação server-side.
 
-Prefira classes como:
+## 14. Componentes React
+
+Prefira componentes:
+
+- focados em apresentação e interação;
+- com props pequenas e explícitas;
+- compostos em vez de herdados;
+- sem detalhes desnecessários da API;
+- com estados de loading, vazio e erro;
+- acessíveis por teclado;
+- fáceis de testar isoladamente.
+
+Evite:
+
+- componentes gigantes;
+- regra de negócio complexa no JSX;
+- chamadas de API espalhadas em componentes;
+- efeitos para sincronizar estado derivado;
+- duplicação de estado calculável;
+- telas totalmente separadas para desktop e mobile quando CSS resolve;
+- componentes universais com dezenas de props booleanas.
+
+Não extraia um componente apenas para reduzir linhas. Extraia quando houver responsabilidade, reutilização ou ganho real de leitura.
+
+## 15. Services, hooks e React Query
+
+Use TanStack React Query quando já for o padrão da feature.
+
+Centralize quando compartilhados:
+
+- query keys;
+- funções de acesso a dados;
+- validação de respostas;
+- invalidações relacionadas;
+- configurações de cache;
+- tratamento comum de erros.
+
+Não faça chamadas protegidas diretamente para o back-end externo.
+
+Use rotas internas, por exemplo:
+
+```txt
+/api/alimentos
+/api/alimentos/autocomplete
+```
+
+Não presuma sucesso da API. Trate `400`, `401`, `403`, `404`, `409`, `422` e `5xx` de forma coerente com o contrato, sem expor detalhes internos.
+
+Não espalhe redirecionamentos de autenticação por vários componentes. Preserve um fluxo central e previsível.
+
+## 16. Design System e linguagem visual
+
+O visual deve ser clean, profissional, acolhedor e coerente com nutrição.
+
+A interface deve transmitir organização, confiança, clareza e leveza, sem poluição visual ou estética alarmista desnecessária.
+
+Regras:
+
+- siga o Design System existente;
+- use tokens semânticos;
+- mantenha hierarquia tipográfica clara;
+- preserve espaçamento consistente;
+- evite excesso de bordas, sombras e cores;
+- use ícones apenas quando ajudarem na compreensão;
+- destaque ações primárias;
+- não dependa apenas de cor para comunicar estado;
+- use textos compreensíveis para profissionais de nutrição;
+- exiba unidades nutricionais de forma consistente;
+- preserve legibilidade de tabelas, gráficos e PDFs.
+
+Prefira tokens como:
 
 ```txt
 bg-action-primary
@@ -201,7 +590,7 @@ text-feedback-error-text
 bg-feedback-error-bg
 ```
 
-Evite introduzir diretamente cores genéricas em componentes finais, como:
+Evite cores genéricas quando houver token semântico equivalente:
 
 ```txt
 emerald-600
@@ -210,7 +599,7 @@ red-50
 blue-500
 ```
 
-Antes de alterar visual, consulte:
+Antes de alterar o visual, consulte:
 
 ```txt
 docs/design-system.md
@@ -218,51 +607,80 @@ src/styles/design-system.css
 src/app/globals.css
 ```
 
-Não alterar tokens globais sem necessidade.
+Não altere tokens globais ou comportamento visual fora do escopo.
 
-Não alterar layout, espaçamento, cores, componentes ou comportamento visual fora do escopo solicitado.
+## 17. Responsividade e acessibilidade
 
-## Segurança em primeiro lugar
+O projeto é desktop-first, mas toda tela deve funcionar em desktop e mobile.
 
-Segurança tem prioridade sobre conveniência, velocidade ou redução de código.
+### 17.1 Desktop
 
-Nunca salvar JWT em `localStorage`.
+Priorize:
 
-Nunca salvar JWT em `sessionStorage`.
+- produtividade;
+- densidade de informação controlada;
+- tabelas legíveis;
+- formulários organizados;
+- navegação previsível;
+- bom uso do espaço horizontal;
+- ações frequentes acessíveis.
 
-Nunca expor JWT no JSON retornado ao browser.
+### 17.2 Mobile
 
-Nunca montar `Authorization: Bearer <token>` no browser para rotas protegidas.
+- não permita scroll horizontal acidental;
+- empilhe conteúdo quando necessário;
+- preserve ordem lógica e hierarquia;
+- mantenha alvos de toque adequados;
+- não oculte ações essenciais;
+- evite modais maiores que a viewport;
+- garanta formulários preenchíveis;
+- teste menus, overlays e elementos fixos.
 
-Nunca criar fallback inseguro usando `NEXT_PUBLIC_API_URL` para chamadas autenticadas.
+Não crie duas implementações completas da mesma tela sem necessidade comprovada.
 
-Nunca transformar uma rota protegida em rota pública para resolver erro de autenticação.
+### 17.3 Acessibilidade
 
-Nunca retornar mensagens de erro contendo token, stack trace, headers sensíveis ou detalhes internos da API.
+- use HTML semântico;
+- associe `label` e campo;
+- preserve foco visível;
+- suporte teclado;
+- use `aria-*` apenas quando necessário;
+- associe erro ao campo;
+- forneça texto alternativo para imagem informativa;
+- respeite contraste;
+- não use placeholder como único rótulo;
+- dê nome acessível a botões de ícone.
 
-Nunca confiar em dados vindos do browser apenas porque já foram validados no front-end.
+## 18. Segurança
 
-A autenticação deve ser baseada em cookie `httpOnly`.
+Segurança tem prioridade sobre conveniência.
 
-O cookie de autenticação padrão é:
+É proibido:
+
+- salvar JWT em `localStorage` ou `sessionStorage`;
+- expor JWT no JSON retornado ao browser;
+- montar `Authorization: Bearer <token>` no browser;
+- criar fallback com `NEXT_PUBLIC_API_URL` para chamada autenticada;
+- tornar rota protegida pública para contornar autenticação;
+- retornar token, stack, headers sensíveis ou detalhes internos;
+- confiar em dados do browser apenas porque foram validados no front-end;
+- registrar dados pessoais ou clínicos desnecessários.
+
+A autenticação deve usar cookie `httpOnly`:
 
 ```txt
 nutriplan_token
 ```
 
-O browser não deve ter acesso ao valor do token.
+O browser não deve acessar o valor do token.
 
-Chamadas protegidas feitas pelo browser devem usar rotas internas do Next.js.
-
-Chamadas autenticadas feitas pelo browser devem usar:
+Chamadas autenticadas do browser devem usar:
 
 ```ts
 credentials: "include"
 ```
 
-## Segurança de autenticação
-
-Arquivos relevantes:
+### 18.1 Arquivos relevantes
 
 ```txt
 src/app/api/auth/_utils.ts
@@ -278,25 +696,19 @@ src/features/auth/schemas/auth.schemas.ts
 src/features/auth/constants.ts
 ```
 
-Ao mexer em autenticação, validar obrigatoriamente:
+Ao alterar autenticação, valide:
 
-* Login funciona.
-* Cadastro funciona.
-* Logout remove o cookie.
-* `/plano` redireciona para `/login` quando não autenticado.
-* `/dashboard` redireciona para `/login` quando não autenticado.
-* `/pacientes` redireciona para `/login` quando não autenticado.
-* `/meu-perfil` redireciona para `/login` quando não autenticado.
-* Usuário autenticado não fica preso no login.
-* Nenhum token aparece no body das respostas.
-* Nenhum token aparece em `localStorage`.
-* Nenhum token aparece em `sessionStorage`.
-* O cookie `nutriplan_token` existe como `httpOnly`.
-* O browser não monta manualmente header `Authorization`.
+- login, cadastro e logout;
+- remoção do cookie;
+- redirecionamento de `/plano`, `/dashboard`, `/pacientes` e `/meu-perfil`;
+- usuário autenticado não preso no login;
+- ausência de token no body e storages;
+- cookie `nutriplan_token` como `httpOnly`;
+- ausência de `Authorization` construído no browser.
 
-## Rotas internas de API
+## 19. Rotas internas de API
 
-Para chamadas autenticadas, prefira rotas internas em:
+Chamadas autenticadas devem usar rotas em:
 
 ```txt
 src/app/api
@@ -304,16 +716,17 @@ src/app/api
 
 Essas rotas devem:
 
-* Ler o cookie `nutriplan_token` no server-side.
-* Retornar `401` se o cookie não existir.
-* Encaminhar a chamada para o back-end usando `Authorization: Bearer <token>` apenas no server-side.
-* Nunca retornar o token no JSON.
-* Repassar status seguro da API upstream.
-* Tratar erros sem vazar informações sensíveis.
-* Validar entradas com Zod quando houver body, params ou query string.
-* Normalizar dados antes de enviar ao back-end quando necessário.
+- ler `nutriplan_token` no server-side;
+- retornar `401` sem cookie;
+- validar `body`, `params` e `searchParams` com Zod;
+- encaminhar `Authorization` apenas no server-side;
+- validar ou normalizar respostas quando aplicável;
+- nunca retornar token;
+- retornar somente status e mensagens seguros;
+- não vazar URL privada, stack, headers ou payload sensível;
+- não criar fallback público.
 
-Exemplo esperado:
+Exemplo:
 
 ```ts
 const token = cookies().get("nutriplan_token")?.value;
@@ -321,286 +734,156 @@ const token = cookies().get("nutriplan_token")?.value;
 if (!token) {
   return NextResponse.json(
     { message: "Não autenticado." },
-    { status: 401 }
+    { status: 401 },
   );
 }
 ```
 
-Não exponha o token em logs, respostas ou objetos enviados ao client.
+Não copie a mesma lógica de autenticação em todas as rotas se já existir helper seguro e estável.
 
-## Variáveis de ambiente
+## 20. Variáveis de ambiente
 
-Não exponha variáveis sensíveis com prefixo `NEXT_PUBLIC_`.
+Não exponha variável sensível com `NEXT_PUBLIC_`.
 
-Use `NEXT_PUBLIC_` apenas para informações que podem ser públicas no browser.
+Use esse prefixo apenas para informação realmente pública.
 
-URLs privadas de API, segredos, tokens e chaves internas não devem ser acessíveis no client-side.
+URLs privadas, segredos, tokens e chaves devem permanecer server-side.
 
-Para chamadas autenticadas, use variável server-side, por exemplo:
+Para fluxo autenticado, use variável server-side, por exemplo:
 
 ```txt
 API_URL
 ```
 
-Não use `NEXT_PUBLIC_API_URL` em chamadas protegidas.
+Não use `NEXT_PUBLIC_API_URL` nem fallback silencioso em fluxo protegido.
 
-Não faça fallback silencioso para URL pública em fluxo autenticado.
+Se variável obrigatória estiver ausente, falhe de forma explícita e segura no server-side.
 
-Evite fallback automático para Render em código sensível. Se `API_URL` for obrigatória, falhe de forma explícita no server-side.
+Valide variáveis de ambiente com Zod quando aplicável.
 
-Quando aplicável, valide variáveis de ambiente com Zod no server-side.
+## 21. Regras específicas para alimentos
 
-## Validações com Zod
-
-Use Zod para validar entradas em formulários, rotas internas e pontos de integração.
-
-Validação no front-end melhora a experiência do usuário, mas não substitui validação no server-side.
-
-Sempre que uma rota interna receber `body`, `params` ou `searchParams`, valide com Zod antes de encaminhar para o back-end.
-
-Prefira `safeParse` quando precisar tratar erro de validação e retornar resposta amigável.
-
-Prefira `parse` apenas quando o erro puder ser capturado por um fluxo já controlado.
-
-Não confie em tipos inferidos manualmente quando puder inferir a partir do schema.
-
-Use:
-
-```ts
-type LoginInput = z.infer<typeof loginSchema>;
-```
-
-Evite duplicar regras de validação em vários lugares.
-
-Mantenha schemas próximos da feature correspondente quando fizer sentido.
-
-Exemplos de locais válidos:
-
-```txt
-src/features/auth/schemas/auth.schemas.ts
-src/features/diet-plan/schemas
-src/lib/validations
-```
-
-Não crie nova estrutura se o projeto já tiver padrão claro para aquela feature.
-
-### Boas práticas com Zod
-
-Schemas devem ter nomes claros:
-
-```ts
-loginSchema
-registerSchema
-foodSearchSchema
-foodDetailSchema
-createDietPlanSchema
-patientInfoSchema
-```
-
-Valide strings vazias quando o campo for obrigatório.
-
-Normalize campos quando fizer sentido:
-
-```ts
-z.string().trim().min(1)
-```
-
-Valide e-mails com:
-
-```ts
-z.string().trim().email()
-```
-
-Valide números recebidos como string quando vierem de query params.
-
-Valide limites de paginação, busca e filtros.
-
-Evite aceitar payloads abertos sem necessidade.
-
-Prefira schemas estritos quando o endpoint não deve aceitar campos extras:
-
-```ts
-z.object({
-  foodName: z.string().trim().min(2).max(100),
-}).strict()
-```
-
-Retorne erros de validação de forma segura e simples.
-
-Não retorne o objeto completo do erro do Zod se ele puder expor detalhes desnecessários.
-
-Exemplo de resposta segura:
-
-```ts
-return NextResponse.json(
-  { message: "Dados inválidos." },
-  { status: 400 }
-);
-```
-
-Se precisar retornar detalhes para o front, retorne apenas mensagens úteis e controladas.
-
-## React Hook Form + Zod
-
-Para formulários, prefira integração entre React Hook Form e Zod.
-
-Use schema como fonte principal de validação.
-
-Não duplique validações no JSX se elas já estão no schema, exceto quando for apenas controle visual.
-
-Fluxo recomendado:
-
-1. Criar schema com Zod.
-2. Inferir tipo com `z.infer`.
-3. Usar resolver do Zod no React Hook Form.
-4. Exibir mensagens amigáveis para o usuário.
-5. Não expor detalhes técnicos.
-
-## TanStack React Query
-
-Use TanStack React Query para chamadas assíncronas quando já for o padrão da feature.
-
-Não faça chamadas protegidas diretamente para o back-end externo.
-
-Para rotas protegidas, chame as rotas internas do Next.js.
-
-Exemplo correto:
-
-```txt
-/api/alimentos
-/api/alimentos/autocomplete
-```
-
-Exemplo incorreto:
-
-```txt
-https://api-nutri-plan.onrender.com/alimentos
-```
-
-Configure erros de forma segura e previsível.
-
-Não presuma que toda resposta da API será bem-sucedida.
-
-Trate `401` de forma adequada, especialmente em fluxos autenticados.
-
-## Padrões para alimentos
-
-A busca de alimentos é parte da feature:
+A busca de alimentos pertence a:
 
 ```txt
 src/features/diet-plan
 ```
 
-Arquivo relevante atual:
+Service relevante:
 
 ```txt
 src/features/diet-plan/services/foods.service.ts
 ```
 
-Chamadas de alimentos no browser devem ir para rotas internas:
+Chamadas do browser devem usar:
 
 ```txt
 /api/alimentos
 /api/alimentos/autocomplete
 ```
 
-Não chamar diretamente a API externa do Render em rotas protegidas.
+É proibido chamar diretamente a API externa, usar `NEXT_PUBLIC_API_URL`, ler token do storage ou montar `Authorization` no browser.
 
-Não usar `NEXT_PUBLIC_API_URL` para alimentos se a rota exige autenticação.
+As rotas internas devem:
 
-Não usar `localStorage` para buscar token.
+- ler `nutriplan_token`;
+- retornar `401` sem cookie;
+- validar query params com Zod;
+- encaminhar autenticação somente no server-side;
+- validar resposta quando aplicável;
+- não retornar token;
+- não criar fallback público.
 
-Não montar header `Authorization` no browser.
-
-A rota `/alimentos` é protegida.
-
-Não deve ser possível recuperar dados de alimentos do banco sem usuário logado.
-
-As rotas internas de alimentos devem:
-
-* Ler o cookie `nutriplan_token`.
-* Retornar `401` se o cookie não existir.
-* Validar query params com Zod.
-* Encaminhar a chamada para o back-end com `Authorization` apenas no server-side.
-* Não retornar token.
-* Não criar fallback público.
-* Não expor URL interna sensível sem necessidade.
-
-Sugestão de schemas:
+Exemplo:
 
 ```ts
 import { z } from "zod";
 
-export const foodAutocompleteSearchParamsSchema = z.object({
-  foodName: z.string().trim().min(2).max(100),
-}).strict();
+export const foodAutocompleteSearchParamsSchema = z
+  .object({
+    foodName: z.string().trim().min(2).max(100),
+  })
+  .strict();
 
-export const foodDetailSearchParamsSchema = z.object({
-  foodCode: z.string().trim().min(1).max(100),
-}).strict();
+export const foodDetailSearchParamsSchema = z
+  .object({
+    foodCode: z.string().trim().min(1).max(100),
+  })
+  .strict();
 ```
 
-## Tratamento de erros
+## 22. Erros e logs
 
-Não ignore erros.
+Não ignore erros nem use `catch` vazio.
 
-Não use `catch` vazio.
+Não exponha:
 
-Não exponha stack trace ao usuário.
+- stack trace;
+- token ou cookie;
+- headers internos;
+- URL privada;
+- payload clínico;
+- detalhes do banco;
+- resposta integral da API upstream.
 
-Não retorne detalhes sensíveis da API upstream.
-
-Use mensagens simples para o usuário e logs controlados no server-side quando necessário.
-
-Exemplo de mensagem segura:
+Use mensagens simples e controladas:
 
 ```txt
 Não foi possível concluir a solicitação.
 ```
 
-Evite mensagens como:
+Logs server-side devem conter apenas o necessário para diagnóstico. Não registre dados pessoais ou clínicos completos quando um identificador sanitizado for suficiente.
 
-```txt
-Erro ao chamar https://api...
-Token inválido: eyJ...
-Stack trace...
+## 23. Desempenho
+
+Otimize com evidência ou risco claro.
+
+Antes de adicionar `useMemo`, `useCallback`, memoização ou cache, confirme benefício real.
+
+Evite:
+
+- chamadas duplicadas;
+- invalidações amplas;
+- estados derivados armazenados;
+- listas sem chave estável;
+- cálculos nutricionais pesados em cada render;
+- código client-side que pode permanecer server-side;
+- imagens sem dimensão ou otimização;
+- dados carregados sem uso.
+
+Não prejudique legibilidade por micro-otimização.
+
+## 24. Dependências
+
+Antes de adicionar biblioteca:
+
+1. confirme que a stack atual não resolve;
+2. avalie manutenção e segurança;
+3. verifique impacto no bundle;
+4. confirme compatibilidade;
+5. explique a necessidade no resumo final.
+
+Não execute `npm install` por padrão se nenhuma dependência mudou e o ambiente já estiver preparado.
+
+Quando `package.json` mudar, mantenha o lockfile coerente.
+
+## 25. Validação
+
+Execute conforme aplicável:
+
+```bash
+npm run lint
+npm run build
+git diff --check
 ```
 
-## O que não fazer
+Execute `npm install` apenas quando dependências estiverem ausentes ou alteradas.
 
-Não salvar token no browser.
+Execute testes relacionados quando existirem.
 
-Não expor token no JSON.
+Nunca afirme que uma validação passou se o comando não foi executado.
 
-Não criar rota pública para dado protegido.
-
-Não remover `credentials: "include"` em chamadas autenticadas.
-
-Não adicionar dependência nova sem necessidade.
-
-Não alterar layout ou telas fora do escopo.
-
-Não implementar features extras durante correções de segurança.
-
-Não ler `node_modules`.
-
-Não fazer refatoração ampla sem necessidade.
-
-Não trocar arquitetura existente sem motivo forte.
-
-Não ignorar validações com Zod.
-
-Não confiar apenas na validação do front-end.
-
-Não deixar chamadas protegidas acessando diretamente a API externa pelo browser.
-
-Não usar `NEXT_PUBLIC_API_URL` para rota protegida.
-
-Não usar classes visuais fora do Design System quando já existir token semântico adequado.
-
-## QA obrigatório para alterações de autenticação
-
-Depois de mexer em autenticação, rodar:
+### 25.1 Autenticação
 
 ```bash
 npm run lint
@@ -612,31 +895,13 @@ rg "NEXT_PUBLIC_API_URL|API_URL" src
 
 Resultado esperado:
 
-* Não deve existir uso de `localStorage` ou `sessionStorage` para token JWT.
-* Não deve existir `persistAuthToken`.
-* Não deve existir `clearAuthToken` para remover token de storage.
-* Não deve existir `getAuthHeader` lendo token no browser.
-* `Authorization` só deve aparecer em contexto server-side seguro.
-* `NEXT_PUBLIC_API_URL` não deve ser usado em chamada autenticada.
-* Nenhum token deve ser retornado no JSON.
+- JWT ausente em Local Storage e Session Storage;
+- nenhum helper de token no browser;
+- `Authorization` apenas em server-side seguro;
+- nenhuma chamada autenticada com `NEXT_PUBLIC_API_URL`;
+- token ausente no JSON.
 
-## QA obrigatório para chamadas protegidas
-
-No navegador:
-
-* Fazer login.
-* Conferir que Local Storage não possui `nutriplan_token`.
-* Conferir que Session Storage não possui `nutriplan_token`.
-* Conferir que o cookie `nutriplan_token` existe e é `httpOnly`.
-* Buscar alimento.
-* Confirmar no Network que a chamada vai para `/api/alimentos` ou `/api/alimentos/autocomplete`.
-* Confirmar que o browser não chama diretamente a API do Render para alimentos.
-* Confirmar que não existe header `Authorization` sendo montado pelo browser.
-* Confirmar que uma requisição sem autenticação retorna `401`.
-
-## QA obrigatório para Zod
-
-Quando alterar formulários, rotas internas ou payloads:
+### 25.2 Contratos, formulários e Zod
 
 ```bash
 npm run lint
@@ -644,19 +909,18 @@ npm run build
 rg "z.object|safeParse|parse|zodResolver" src
 ```
 
-Validar manualmente:
+Valide:
 
-* Campos obrigatórios rejeitam valor vazio.
-* E-mail inválido é rejeitado.
-* Query params inválidos são rejeitados.
-* Payload inesperado não quebra a aplicação.
-* Mensagens de erro são amigáveis.
-* Erros não expõem detalhes técnicos.
-* O tipo TypeScript é inferido a partir do schema quando aplicável.
+- campos obrigatórios;
+- formatos como e-mail;
+- query params;
+- payload inesperado;
+- resposta externa antes do uso;
+- mensagens amigáveis;
+- tipos derivados de schemas;
+- ausência de duplicação manual do contrato.
 
-## QA obrigatório para alimentos
-
-Depois de alterar busca de alimentos:
+### 25.3 Alimentos
 
 ```bash
 npm run lint
@@ -667,30 +931,80 @@ rg "NEXT_PUBLIC_API_URL|localStorage|getAuthHeader|Authorization" src/features/d
 
 Resultado esperado:
 
-* `src/features/diet-plan/services/foods.service.ts` chama apenas rotas internas do Next.js.
-* O browser chama `/api/alimentos` e `/api/alimentos/autocomplete`.
-* O browser não chama diretamente `api-nutri-plan.onrender.com`.
-* O browser não usa `localStorage` para token.
-* O browser não monta `Authorization`.
-* As rotas internas validam query params com Zod.
-* As rotas internas retornam `401` quando não houver cookie.
+- `foods.service.ts` usa rotas internas;
+- browser usa `/api/alimentos` ou `/api/alimentos/autocomplete`;
+- browser não chama diretamente a API externa;
+- browser não lê token nem monta `Authorization`;
+- query params são validados;
+- ausência de cookie retorna `401`.
 
-## Checklist antes de finalizar
+### 25.4 Visual
 
-Antes de finalizar qualquer alteração, confirme:
+Valide:
 
-* `npm run lint` passou.
-* `npm run build` passou.
-* A alteração ficou limitada ao escopo solicitado.
-* Não existe JWT no `localStorage`.
-* Não existe JWT no `sessionStorage`.
-* O browser não recebe token no JSON.
-* O cookie `nutriplan_token` segue `httpOnly`.
-* Rotas protegidas usam proxy server-side.
-* Chamadas protegidas usam `credentials: "include"` quando feitas pelo browser.
-* Rotas internas validam entradas com Zod quando aplicável.
-* Não houve leitura ou alteração desnecessária em arquivos fora do escopo.
-* Não foi adicionada dependência nova sem necessidade real.
-* Não houve mudança visual fora do escopo.
-* Não foram expostos dados sensíveis em erro, log ou resposta.
-* O Design System foi respeitado.
+- desktop principal;
+- mobile;
+- ausência de scroll horizontal acidental;
+- loading, vazio, sucesso e erro;
+- navegação por teclado;
+- foco visível;
+- contraste e legibilidade;
+- consistência com o Design System.
+
+## 26. Proibições principais
+
+- não reescrever arquivo inteiro para mudar poucas linhas;
+- não aplicar formatação global sem solicitação;
+- não alterar arquivos fora do escopo;
+- não criar abstração prematura;
+- não duplicar contratos ou regras de negócio;
+- não usar herança quando composição for suficiente;
+- não criar classes apenas para organizar dados;
+- não criar interface manual duplicando schema Zod;
+- não usar cast para fingir que resposta externa é válida;
+- não usar `any` para contornar erro;
+- não ignorar validação server-side;
+- não salvar ou expor token;
+- não chamar rota protegida diretamente na API externa;
+- não tornar dado protegido público;
+- não adicionar dependência sem necessidade;
+- não mudar Design System fora do escopo;
+- não implementar feature extra durante correção;
+- não afirmar que testes passaram sem executá-los;
+- não esconder falha com fallback silencioso.
+
+## 27. Checklist final
+
+- [ ] O pedido foi atendido sem ampliar o escopo.
+- [ ] O diff contém somente mudanças necessárias.
+- [ ] Nenhum arquivo foi reescrito integralmente sem motivo.
+- [ ] Regras de negócio não foram duplicadas.
+- [ ] Contratos compartilhados possuem uma fonte de verdade.
+- [ ] Dados externos são validados com Zod.
+- [ ] Tipos de contratos usam `z.infer`.
+- [ ] Interfaces manuais não duplicam entidades.
+- [ ] Composição foi preferida a herança.
+- [ ] UI não depende desnecessariamente do DTO externo.
+- [ ] Mudanças de contrato tiveram consumidores e mappers revisados.
+- [ ] JWT não aparece em storages, respostas ou logs.
+- [ ] Cookie `nutriplan_token` permanece `httpOnly`.
+- [ ] Rotas protegidas usam proxy server-side.
+- [ ] Chamadas autenticadas usam `credentials: "include"`.
+- [ ] Erros e logs não expõem dados sensíveis.
+- [ ] Design System foi respeitado.
+- [ ] Interface funciona em desktop e mobile.
+- [ ] Acessibilidade básica foi preservada.
+- [ ] Validações executadas foram relatadas corretamente.
+
+## 28. Resumo final do agente
+
+Ao concluir, informe objetivamente:
+
+1. arquivos alterados;
+2. comportamento corrigido ou implementado;
+3. contratos ou schemas modificados;
+4. validações executadas e resultados;
+5. riscos, limitações ou verificações pendentes;
+6. problemas encontrados fora do escopo.
+
+O resumo deve permitir revisão rápida. Não use descrição genérica.
