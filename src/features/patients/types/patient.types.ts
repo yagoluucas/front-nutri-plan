@@ -21,6 +21,7 @@ export interface PatientSummary {
 export interface Patient extends PatientFormValues {
     id: string;
     idNutricionista: string;
+    qtdPlanos: number;
     planosAlimentares: DietPlanRecord[];
     createdAt: string;
     updatedAt: string;

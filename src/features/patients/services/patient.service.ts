@@ -46,7 +46,7 @@ const apiDietPlanWithIdSchema = apiDietPlanSchema.extend({
 const apiPatientSchema = patientFormSchema.extend({
     id: z.string().trim().min(1),
     idNutricionista: z.string().trim().min(1),
-    planosAlimentares: z.array(apiDietPlanSchema).optional(),
+    qtdPlanos: z.number().int().min(0),
     createdAt: z.string().trim().min(1),
     updatedAt: z.string().trim().min(1),
 });
@@ -64,7 +64,6 @@ const dietPlansResponseSchema = z.object({
 }).passthrough();
 
 type ApiPatient = z.infer<typeof apiPatientSchema>;
-type ApiDietPlan = z.infer<typeof apiDietPlanSchema>;
 type ApiDietPlanWithId = z.infer<typeof apiDietPlanWithIdSchema>;
 
 function getPayloadMessage(payload: unknown, fallback: string) {
@@ -109,10 +108,6 @@ function getPatientDietPlanPatientData(patient: ApiPatient) {
     };
 }
 
-function hasDietPlanId(plan: ApiDietPlan): plan is ApiDietPlanWithId {
-    return typeof plan.id === "string" && plan.id.trim().length > 0;
-}
-
 async function toDietPlanRecord(
     plan: ApiDietPlanWithId,
     patient: ApiPatient,
@@ -144,12 +139,9 @@ async function fetchPatientDietPlans(patient: ApiPatient): Promise<DietPlanRecor
 }
 
 async function toPatient(patient: ApiPatient): Promise<Patient> {
-    const patientPlans = patient.planosAlimentares ?? [];
-    const planosAlimentares = patientPlans.length === 0
-        ? []
-        : patientPlans.every(hasDietPlanId)
-            ? await Promise.all(patientPlans.map((plan) => toDietPlanRecord(plan, patient)))
-            : await fetchPatientDietPlans(patient);
+    const planosAlimentares = patient.qtdPlanos > 0
+        ? await fetchPatientDietPlans(patient)
+        : [];
 
     return {
         ...patient,
