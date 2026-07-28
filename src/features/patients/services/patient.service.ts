@@ -1,58 +1,19 @@
 import { z } from "zod";
-import { patientFormSchema, type PatientFormValues } from "../schemas/patient.schemas";
+import {
+    patientFormSchema,
+    patientSchema,
+    patientSummarySchema,
+    type PatientFormValues,
+} from "../schemas/patient.schemas";
 import type { DietPlanRecord, Patient, PatientSummary } from "../types/patient.types";
 import { hydrateBackendPlan } from "../../diet-plan/services/dietPlan.service";
 import { fetchWithSession } from "../../auth/services/session.service";
+import { persistedDietPlanSchema } from "../../diet-plan/schemas/dietPlan.schemas";
 
-const apiPatientSummarySchema = z.object({
-    id: z.string().trim().min(1),
-    nome: z.string().trim().min(1),
-    sobrenome: z.string().trim().min(1),
-    email: z.string().optional(),
-    dataNascimento: patientFormSchema.shape.dataNascimento,
-    qtdPlanos: z.number().int().min(0),
-    createdAt: z.string().trim().min(1),
-    updatedAt: z.string().trim().min(1),
-});
-
-const apiMealSchema = z.object({
-    nome: z.string(),
-    horario: z.string(),
-    observacoes: z.string().optional(),
-    alimentos: z.array(z.object({
-        codigoAlimento: z.string(),
-        quantidade: z.number(),
-        medidaSelecionada: z.object({
-            nomeMedida: z.string(),
-            total: z.number(),
-            unidadeMedida: z.string(),
-            tipoMedida: z.enum(["Caseira", "Tecnica"]),
-        }),
-    })).default([]),
-}).passthrough();
-
-const apiDietPlanSchema = z.object({
-    id: z.string().trim().min(1).optional(),
-    titulo: z.string().optional(),
-    objetivoDoPlano: z.string().optional(),
-    observacoesGerais: z.string().optional(),
-    refeicoes: z.array(apiMealSchema).default([]),
-}).passthrough();
-
-const apiDietPlanWithIdSchema = apiDietPlanSchema.extend({
-    id: z.string().trim().min(1),
-});
-
-const apiPatientSchema = patientFormSchema.extend({
-    id: z.string().trim().min(1),
-    idNutricionista: z.string().trim().min(1),
-    qtdPlanos: z.number().int().min(0),
-    createdAt: z.string().trim().min(1),
-    updatedAt: z.string().trim().min(1),
-});
+const apiPatientSchema = patientSchema.omit({ planosAlimentares: true });
 
 const listPatientsResponseSchema = z.object({
-    pacientes: z.array(apiPatientSummarySchema),
+    pacientes: z.array(patientSummarySchema),
 }).passthrough();
 
 const patientResponseSchema = z.object({
@@ -60,11 +21,11 @@ const patientResponseSchema = z.object({
 }).passthrough();
 
 const dietPlansResponseSchema = z.object({
-    planosAlimentares: z.array(apiDietPlanWithIdSchema),
+    planosAlimentares: z.array(persistedDietPlanSchema),
 }).passthrough();
 
 type ApiPatient = z.infer<typeof apiPatientSchema>;
-type ApiDietPlanWithId = z.infer<typeof apiDietPlanWithIdSchema>;
+type ApiDietPlanWithId = z.infer<typeof persistedDietPlanSchema>;
 
 function getPayloadMessage(payload: unknown, fallback: string) {
     if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
@@ -118,8 +79,8 @@ async function toDietPlanRecord(
     return {
         ...hydratedPlan,
         id: plan.id,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: plan.createdAt || now,
+        updatedAt: plan.updatedAt || now,
     };
 }
 

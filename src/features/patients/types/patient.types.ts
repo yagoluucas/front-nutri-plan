@@ -1,28 +1,7 @@
-import { IDietPlanState } from "../../diet-plan/types/dietPlan.types";
-import { PatientFormValues } from "../schemas/patient.schemas";
+import { z } from "zod";
+import { dietPlanRecordSchema } from "../../diet-plan/schemas/dietPlan.schemas";
+import { patientSchema, patientSummarySchema } from "../schemas/patient.schemas";
 
-export interface DietPlanRecord extends IDietPlanState {
-    id: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface PatientSummary {
-    id: string;
-    nome: string;
-    sobrenome: string;
-    email?: string;
-    dataNascimento?: PatientFormValues["dataNascimento"];
-    qtdPlanos: number;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface Patient extends PatientFormValues {
-    id: string;
-    idNutricionista: string;
-    qtdPlanos: number;
-    planosAlimentares: DietPlanRecord[];
-    createdAt: string;
-    updatedAt: string;
-}
+export type DietPlanRecord = z.infer<typeof dietPlanRecordSchema>;
+export type PatientSummary = z.infer<typeof patientSummarySchema>;
+export type Patient = z.infer<typeof patientSchema>;

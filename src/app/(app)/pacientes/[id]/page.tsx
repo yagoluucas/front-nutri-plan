@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   FileDown,
@@ -45,6 +46,11 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function getSortableDate(value: string) {
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
 function formatNutrientValue(value: number, unit: string) {
   const formattedValue = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: value >= 10 ? 1 : 2,
@@ -72,7 +78,21 @@ export default function PacienteDetalhePage() {
         : null;
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
-  const visiblePlans = patient?.planosAlimentares ?? [];
+  const visiblePlans = useMemo(
+    () => patient?.planosAlimentares ?? [],
+    [patient?.planosAlimentares],
+  );
+  const sortedVisiblePlans = useMemo(
+    () =>
+      [...visiblePlans].sort((firstPlan, secondPlan) => {
+        if (firstPlan.planoAtivo !== secondPlan.planoAtivo) {
+          return firstPlan.planoAtivo ? -1 : 1;
+        }
+
+        return getSortableDate(secondPlan.createdAt) - getSortableDate(firstPlan.createdAt);
+      }),
+    [visiblePlans],
+  );
   const isDeletingPlan = deletingPlanId !== null;
 
   const handleDeletePlan = async (planId: string) => {
@@ -284,7 +304,7 @@ export default function PacienteDetalhePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {visiblePlans.map((plan) => {
+              {sortedVisiblePlans.map((plan) => {
                 const isExpanded = expandedPlanId === plan.id;
                 const micronutrients = calculatePlanMicronutrients(
                   plan.refeicoes,
@@ -297,9 +317,17 @@ export default function PacienteDetalhePage() {
                   >
                     <div>
                       <div>
-                        <h3 className="text-heading-h4 font-semibold text-content-primary">
-                          {plan.titulo || "Plano alimentar"}
-                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-heading-h4 font-semibold text-content-primary">
+                            {plan.tituloPlano || "Plano alimentar"}
+                          </h3>
+                          {plan.planoAtivo && (
+                            <span className="inline-flex items-center gap-1 rounded-sm bg-feedback-success-bg px-2 py-1 text-caption font-medium text-feedback-success-text">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Ativo
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1 text-body-small text-content-secondary">
                           {plan.refeicoes.length}{" "}
                           {plan.refeicoes.length === 1

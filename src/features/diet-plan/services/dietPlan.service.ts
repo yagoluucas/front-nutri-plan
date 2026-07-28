@@ -7,18 +7,16 @@ import {
     backendDietPlanSchema,
     backendFoodSchema,
     backendMealSchema,
+    persistedDietPlanSchema,
 } from "../schemas/dietPlan.schemas";
+import { mapDietPlanToRequest } from "../mappers/dietPlan.mapper";
 
 const dietPlanResponseSchema = z.object({
-    planoAlimentar: backendDietPlanSchema.extend({
-        id: z.string(),
-    }),
+    planoAlimentar: persistedDietPlanSchema,
 }).passthrough();
 
 const dietPlansResponseSchema = z.object({
-    planosAlimentares: z.array(backendDietPlanSchema.extend({
-        id: z.string(),
-    })),
+    planosAlimentares: z.array(persistedDietPlanSchema),
 }).passthrough();
 
 export type BackendDietPlan = z.infer<typeof backendDietPlanSchema>;
@@ -55,29 +53,6 @@ async function requestDietPlanApi(
     }
 
     return payload;
-}
-
-function optionalString(value?: string) {
-    const trimmed = value?.trim();
-    return trimmed || undefined;
-}
-
-function mapPlanToBackend(plan: IDietPlanState): BackendDietPlan {
-    return backendDietPlanSchema.parse({
-        titulo: optionalString(plan.titulo),
-        objetivoDoPlano: optionalString(plan.objetivoDoPlano),
-        observacoesGerais: optionalString(plan.orientacoesGerais),
-        refeicoes: plan.refeicoes.map((meal) => ({
-            nome: meal.nome,
-            horario: meal.horario,
-            observacoes: optionalString(meal.observacoes),
-            alimentos: meal.alimentos.map((food) => ({
-                codigoAlimento: food.codigoAlimento,
-                quantidade: food.quantidade,
-                medidaSelecionada: food.medidaSelecionada,
-            })),
-        })),
-    });
 }
 
 function findMeasureIndex(measures: IMedidaCaseira[], selectedMeasure: IMedidaCaseira) {
@@ -130,7 +105,7 @@ async function hydrateMeal(meal: z.infer<typeof backendMealSchema>, planId: stri
 }
 
 export async function hydrateBackendPlan(
-    plan: z.infer<typeof backendDietPlanSchema> & { id: string },
+    plan: z.infer<typeof persistedDietPlanSchema>,
     patient: Partial<IPatientData> = {},
 ): Promise<IDietPlanState> {
     const refeicoes = await Promise.all(plan.refeicoes.map((meal, index) => hydrateMeal(meal, plan.id, index)));
@@ -143,9 +118,10 @@ export async function hydrateBackendPlan(
 
     return {
         id: plan.id,
-        titulo: plan.titulo || "Plano alimentar",
+        tituloPlano: plan.tituloPlano || "Plano alimentar",
         objetivoDoPlano: plan.objetivoDoPlano || "",
         orientacoesGerais: plan.observacoesGerais || "",
+        planoAtivo: plan.planoAtivo,
         paciente: {
             nome: patient.nome || "",
             email: patient.email || "",
@@ -176,7 +152,7 @@ export async function saveDietPlanApi(patientId: string, plan: IDietPlanState): 
             : `/api/pacientes/${encodeURIComponent(patientId)}/planos-alimentares`,
         {
             method: plan.id ? "PATCH" : "POST",
-            body: JSON.stringify(mapPlanToBackend(plan)),
+            body: JSON.stringify(mapDietPlanToRequest(plan)),
         },
     );
     const parsedResponse = dietPlanResponseSchema.safeParse(payload);

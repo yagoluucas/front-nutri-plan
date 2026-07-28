@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { Patient } from "../types/patient.types";
+import { dietPlanRequestSchema } from "../../diet-plan/schemas/dietPlan.schemas";
+import { mapDietPlanToRequest } from "../../diet-plan/mappers/dietPlan.mapper";
 
 export const backendPacienteDraftSchema = z.object({
     idNutricionista: z.string().trim().min(1),
@@ -9,26 +11,7 @@ export const backendPacienteDraftSchema = z.object({
     dataNascimento: z.string().optional(),
     sexo: z.enum(["Masculino", "Feminino", "Outro"]),
     observacoes: z.string().optional(),
-    planosAlimentares: z.array(z.object({
-        titulo: z.string().optional(),
-        objetivoDoPlano: z.string().optional(),
-        observacoesGerais: z.string().optional(),
-        refeicoes: z.array(z.object({
-            nome: z.string(),
-            horario: z.string(),
-            observacoes: z.string().optional(),
-            alimentos: z.array(z.object({
-                codigoAlimento: z.string(),
-                quantidade: z.number(),
-                medidaSelecionada: z.object({
-                    nomeMedida: z.string(),
-                    total: z.number(),
-                    unidadeMedida: z.string(),
-                    tipoMedida: z.enum(["Caseira", "Tecnica"]),
-                }),
-            })),
-        })),
-    })),
+    planosAlimentares: z.array(dietPlanRequestSchema),
 }).strict();
 
 export type BackendPacienteDraft = z.infer<typeof backendPacienteDraftSchema>;
@@ -47,20 +30,6 @@ export function mapPatientToBackendDraft(patient: Patient): BackendPacienteDraft
         dataNascimento: optionalString(patient.dataNascimento),
         sexo: patient.sexo,
         observacoes: optionalString(patient.observacoes),
-        planosAlimentares: patient.planosAlimentares.map((plan) => ({
-            titulo: optionalString(plan.titulo),
-            objetivoDoPlano: plan.objetivoDoPlano || undefined,
-            observacoesGerais: plan.orientacoesGerais,
-            refeicoes: plan.refeicoes.map((meal) => ({
-                nome: meal.nome,
-                horario: meal.horario,
-                observacoes: meal.observacoes || undefined,
-                alimentos: meal.alimentos.map((food) => ({
-                    codigoAlimento: food.codigoAlimento,
-                    quantidade: food.quantidade,
-                    medidaSelecionada: food.medidaSelecionada,
-                })),
-            })),
-        })),
+        planosAlimentares: patient.planosAlimentares.map(mapDietPlanToRequest),
     });
 }

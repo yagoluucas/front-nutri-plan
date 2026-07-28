@@ -1,5 +1,10 @@
-import { IAlimentoAutocomplete, IAlimentoDetail } from "../types/dietPlan.types";
+import { IAlimentoDetail } from "../types/dietPlan.types";
 import { fetchWithSession } from "../../auth/services/session.service";
+import {
+    foodAutocompleteApiResponseSchema,
+    foodDetailApiResponseSchema,
+    type FoodSearchResponse,
+} from "../schemas/dietPlan.schemas";
 
 const TIMEOUT_MS = 60000; // 60 seconds for Render cold starts
 
@@ -19,18 +24,7 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
     }
 }
 
-interface FoodsApiResponse<T> {
-    alimentos?: T[];
-    message?: string;
-    page?: number;
-    hasNextPage?: boolean;
-}
-
-export interface FoodSearchResponse {
-    alimentos: IAlimentoAutocomplete[];
-    page: number;
-    hasNextPage: boolean;
-}
+export type { FoodSearchResponse } from "../schemas/dietPlan.schemas";
 
 function hasErrorName(error: unknown, name: string) {
     return typeof error === "object" && error !== null && "name" in error && error.name === name;
@@ -74,7 +68,13 @@ export async function searchFoods(term: string, page = 1): Promise<FoodSearchRes
             throw new Error(`Erro ao buscar alimentos (${response.status})`);
         }
 
-        const data = await response.json() as FoodsApiResponse<IAlimentoAutocomplete>;
+        const parsedData = foodAutocompleteApiResponseSchema.safeParse(await response.json());
+
+        if (!parsedData.success) {
+            throw new Error("Resposta invalida ao buscar alimentos.");
+        }
+
+        const data = parsedData.data;
 
         return {
             alimentos: data.alimentos || [],
@@ -97,8 +97,14 @@ export async function getFoodDetail(code: string): Promise<IAlimentoDetail> {
             throw new Error("Erro ao buscar detalhes do alimento");
         }
 
-        const data = await response.json() as FoodsApiResponse<IAlimentoDetail>;
-        if (data.alimentos && data.alimentos.length > 0) {
+        const parsedData = foodDetailApiResponseSchema.safeParse(await response.json());
+
+        if (!parsedData.success) {
+            throw new Error("Resposta invalida ao buscar detalhes do alimento.");
+        }
+
+        const data = parsedData.data;
+        if (data.alimentos.length > 0) {
             return data.alimentos[0];
         }
         

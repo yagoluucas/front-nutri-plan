@@ -150,6 +150,10 @@ Prefira alterações pequenas, claras e fáceis de revisar.
 
 Use TypeScript de forma estrita sempre que possível.
 
+Siga DRY (Don't Repeat Yourself) para regras de negócio, formatos de payload, schemas, mapeamentos e nomes de campos. Quando um mesmo contrato for consumido por formulário, service, rota interna ou mapper, defina-o uma única vez em schema/helper reutilizável e importe-o nos demais pontos. Nunca replique manualmente o formato de uma entidade em vários arquivos.
+
+Zod é a fonte de verdade obrigatória para todo contrato de dados validável: payloads, respostas de API, entidades persistidas, estados de formulário e parâmetros de rota. Tipos TypeScript desses contratos devem sempre ser derivados com `z.infer<typeof schema>`; interfaces manuais ficam restritas a props de componentes, contextos React e tipos genéricos que não representem dados validáveis.
+
 Não introduza dependências novas sem necessidade real.
 
 Não remova validações existentes sem justificar.

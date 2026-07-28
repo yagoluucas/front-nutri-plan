@@ -2,6 +2,7 @@ import {
   favoriteFoodsSchema,
   profileApiSchema,
   profileFormSchema,
+  nutritionistProfileSchema,
   type FavoriteFood,
   type ProfileFormValues,
 } from "../schemas/profile.schemas";
@@ -61,12 +62,12 @@ function toDateInputValue(value: string) {
 function toProfile(
   profile: z.infer<typeof profileApiSchema>,
 ): NutritionistProfile {
-  return {
+  return nutritionistProfileSchema.parse({
     ...profile,
     dataNascimento: toDateInputValue(profile.dataNascimento),
     profissao: "Nutricionista",
     fotoPerfil: profile.imagemPerfil,
-  };
+  });
 }
 
 function parseProfilePayload(

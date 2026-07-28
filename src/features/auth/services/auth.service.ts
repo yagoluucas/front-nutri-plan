@@ -1,12 +1,10 @@
 import { DEFAULT_AUTH_REDIRECT } from "../constants";
-import { LoginFormValues, RegisterFormValues } from "../schemas/auth.schemas";
-
-export interface AuthResponse {
-    message?: string;
-    error?: boolean;
-    statusCode?: number;
-    [key: string]: unknown;
-}
+import {
+    authResponseSchema,
+    LoginFormValues,
+    RegisterFormValues,
+    type AuthResponse,
+} from "../schemas/auth.schemas";
 
 async function requestAuth(
     endpoint: "login" | "register",
@@ -18,7 +16,9 @@ async function requestAuth(
         credentials: "include",
         body: JSON.stringify(data),
     });
-    const responseData = await response.json().catch(() => null) as AuthResponse | null;
+    const payload: unknown = await response.json().catch(() => null);
+    const parsedResponse = authResponseSchema.safeParse(payload);
+    const responseData = parsedResponse.success ? parsedResponse.data : null;
 
     if (!response.ok) {
         throw new Error(responseData?.message || "Erro ao autenticar");

@@ -55,6 +55,11 @@ export const profileApiSchema = profileFormSchema.extend({
     updatedAt: z.string().optional(),
 });
 
+export const nutritionistProfileSchema = profileApiSchema.extend({
+    profissao: z.string().optional(),
+    fotoPerfil: optionalProfileImageSchema,
+});
+
 export const profileUpdateApiSchema = profileFormSchema.partial().extend({
     alimentosFavoritos: favoriteFoodsSchema.optional(),
 });

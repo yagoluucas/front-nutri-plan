@@ -23,3 +23,11 @@ export const registerSchema = z.object({
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+
+export const authResponseSchema = z.object({
+    message: z.string().optional(),
+    error: z.boolean().optional(),
+    statusCode: z.number().int().optional(),
+}).passthrough();
+
+export type AuthResponse = z.infer<typeof authResponseSchema>;

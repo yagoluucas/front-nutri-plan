@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dietPlanRecordSchema } from "../../diet-plan/schemas/dietPlan.schemas";
 
 const optionalTrimmedString = (maxLength: number, message: string) =>
     z.preprocess(
@@ -30,3 +31,22 @@ export const patientFormSchema = z.object({
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
+export const patientSummarySchema = z.object({
+    id: z.string().trim().min(1),
+    nome: z.string().trim().min(1),
+    sobrenome: z.string().trim().min(1),
+    email: z.string().optional(),
+    dataNascimento: patientFormSchema.shape.dataNascimento,
+    qtdPlanos: z.number().int().min(0),
+    createdAt: z.string().trim().min(1),
+    updatedAt: z.string().trim().min(1),
+});
+
+export const patientSchema = patientFormSchema.extend({
+    id: z.string().trim().min(1),
+    idNutricionista: z.string().trim().min(1),
+    qtdPlanos: z.number().int().min(0),
+    planosAlimentares: z.array(dietPlanRecordSchema),
+    createdAt: z.string().trim().min(1),
+    updatedAt: z.string().trim().min(1),
+});
