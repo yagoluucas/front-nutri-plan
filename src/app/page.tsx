@@ -1,106 +1,241 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Leaf, Users, Utensils } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  FileDown,
+  FileText,
+  Leaf,
+  Search,
+  ShieldCheck,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
+import PublicFooter from "@/src/features/marketing/components/PublicFooter";
+import PublicHeader from "@/src/features/marketing/components/PublicHeader";
+import ProductPreview from "@/src/features/marketing/components/ProductPreview";
+import FaqSection from "@/src/features/marketing/components/FaqSection";
+
+export const metadata: Metadata = {
+  title: "Planos alimentares e gestao de pacientes",
+  description:
+    "Crie planos alimentares, organize pacientes e gere documentos profissionais com uma plataforma gratuita para nutricionistas.",
+  openGraph: {
+    title: "Nutri Plan - Planos alimentares e gestao de pacientes",
+    description:
+      "Uma ferramenta gratuita e simples para nutricionistas criarem planos alimentares e organizarem seus pacientes.",
+  },
+};
+
+const differentials = [
+  { icon: Leaf, label: "Acesso gratuito" },
+  { icon: Users, label: "Gestao de pacientes" },
+  { icon: UtensilsCrossed, label: "Planos alimentares" },
+  { icon: FileDown, label: "Documentos em PDF" },
+];
+
+const resources = [
+  {
+    icon: Users,
+    title: "Pacientes em um unico lugar",
+    description: "Consulte os dados cadastrais e os planos vinculados a cada acompanhamento.",
+  },
+  {
+    icon: UtensilsCrossed,
+    title: "Refeicoes e opcoes bem organizadas",
+    description: "Estruture horarios, alimentos e alternativas conforme sua conduta.",
+  },
+  {
+    icon: Search,
+    title: "Busca de alimentos",
+    description: "Encontre alimentos e medidas para compor as refeicoes do plano.",
+  },
+  {
+    icon: BarChart3,
+    title: "Informacoes nutricionais",
+    description: "Visualize macronutrientes e micronutrientes enquanto monta o plano.",
+  },
+  {
+    icon: FileText,
+    title: "PDF pronto para compartilhar",
+    description: "Gere uma versao organizada do plano alimentar para o paciente.",
+  },
+  {
+    icon: BarChart3,
+    title: "Visao da sua base",
+    description: "Acompanhe pacientes e planos no dashboard da plataforma.",
+  },
+];
+
+function PrimaryLink({
+  children,
+  className = "",
+  inverted = false,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  inverted?: boolean;
+}) {
+  return (
+    <Link
+      href="/login"
+      className={`inline-flex h-11 items-center justify-center rounded-md px-5 text-button font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+        inverted
+          ? "bg-surface-default text-action-primary hover:bg-brand-50 focus-visible:ring-brand-200"
+          : "bg-action-primary text-action-primary-text hover:bg-action-primary-hover focus-visible:ring-action-primary-focus"
+      } ${className}`}
+    >
+      {children}
+      <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+    </Link>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-background-page selection:bg-brand-100">
-      {/* Header */}
-      <header className="w-full border-b border-border-subtle bg-surface-default/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-action-primary p-2 rounded-lg">
-              <Leaf className="text-white w-6 h-6" />
-            </div>
-            <span className="text-heading-h3 font-bold text-content-primary">Nutri Plan</span>
-          </div>
-          
-          <nav>
-            <Link 
-              href="/login" 
-              className="inline-flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 bg-action-primary h-11 px-6 text-button font-semibold text-action-primary-text hover:bg-action-primary-hover shadow-sm hover:shadow-md"
-            >
-              Fazer Login
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background-page text-content-primary">
+      <PublicHeader />
 
-      {/* Hero Section */}
-      <main className="flex-1 flex flex-col">
-        <section className="relative py-24 md:py-32 overflow-hidden">
-          {/* Subtle background decorations */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] opacity-30 bg-gradient-to-b from-brand-100 to-transparent rounded-full blur-3xl -z-10" />
-          
-          <div className="max-w-7xl mx-auto px-6 text-center">
-            <h1 className="text-display md:text-5xl lg:text-6xl font-bold text-content-primary tracking-tight max-w-4xl mx-auto leading-tight">
-              A evolução no acompanhamento <span className="text-action-primary">nutricional</span> dos seus pacientes.
-            </h1>
-            <p className="mt-6 text-body-large text-content-secondary max-w-2xl mx-auto">
-              Simplifique a criação de planos alimentares, gerencie seus pacientes com facilidade e tenha acesso a um banco de alimentos completo. Feito por nutricionistas, para nutricionistas.
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link 
-                href="/login" 
-                className="inline-flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 bg-action-primary h-12 px-8 text-button font-bold text-action-primary-text hover:bg-action-primary-hover shadow-md hover:shadow-lg w-full sm:w-auto"
-              >
-                Começar agora <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
+      <main>
+        <section className="border-b border-border-subtle bg-background-page">
+          <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:py-24">
+            <div className="max-w-2xl">
+              <p className="text-caption font-semibold uppercase text-action-primary">Nutri Plan</p>
+              <h1 className="mt-4 text-display font-bold text-content-primary sm:text-5xl sm:leading-tight">
+                Crie planos alimentares e organize seus pacientes gratuitamente
+              </h1>
+              <p className="mt-6 max-w-xl text-body-large text-content-secondary">
+                O Nutri Plan ajuda nutricionistas a cadastrar pacientes, montar refeicoes, consultar alimentos e gerar planos alimentares profissionais em PDF, tudo em um so lugar.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <PrimaryLink className="w-full sm:w-auto">Criar conta gratis</PrimaryLink>
+                <Link
+                  href="#recursos"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-5 text-button font-semibold text-action-secondary-text transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
+                >
+                  Conhecer os recursos
+                </Link>
+              </div>
+              <p className="mt-6 text-body-small text-content-muted">
+                Gratuito para nutricionistas <span aria-hidden="true">-</span> Sem assinatura <span aria-hidden="true">-</span> Acesso pelo navegador
+              </p>
+            </div>
+            <ProductPreview />
+          </div>
+        </section>
+
+        <section aria-label="Diferenciais" className="border-b border-border-subtle bg-surface-muted">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border-default px-6 lg:grid-cols-4 lg:divide-y-0">
+            {differentials.map(({ icon: Icon, label }) => (
+              <div key={label} className="flex min-h-24 items-center gap-3 px-4 py-5 first:border-l-0 lg:px-7">
+                <Icon className="h-5 w-5 shrink-0 text-action-primary" aria-hidden="true" />
+                <span className="text-body-small font-semibold text-content-primary">{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-16">
+          <div>
+            <p className="text-caption font-semibold uppercase text-action-primary">Para a rotina de atendimento</p>
+            <h2 className="mt-3 text-heading-h1 font-bold text-content-primary">
+              Mais organizacao no atendimento. Menos trabalho repetitivo.
+            </h2>
+          </div>
+          <div className="divide-y divide-divider-default border-y border-divider-default">
+            {[
+              ["Centralize seus pacientes", "Mantenha informacoes e planos organizados em um unico lugar."],
+              ["Monte planos com mais praticidade", "Organize horarios, refeicoes, opcoes e alimentos durante ou depois da consulta."],
+              ["Entregue um documento profissional", "Gere um PDF organizado e personalizado para encaminhar ao paciente."],
+            ].map(([title, description], index) => (
+              <article key={title} className="grid grid-cols-[2.5rem_1fr] gap-4 py-6 sm:grid-cols-[4rem_1fr]">
+                <span className="text-heading-h3 font-semibold text-action-primary">0{index + 1}</span>
+                <div>
+                  <h3 className="text-heading-h3 font-semibold text-content-primary">{title}</h3>
+                  <p className="mt-2 text-body-default text-content-secondary">{description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="recursos" className="scroll-mt-6 border-y border-border-subtle bg-background-subtle py-20">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="max-w-2xl">
+              <p className="text-caption font-semibold uppercase text-action-primary">Recursos</p>
+              <h2 className="mt-3 text-heading-h1 font-bold text-content-primary">Recursos para simplificar a rotina nutricional</h2>
+              <p className="mt-4 text-body-default text-content-secondary">Do cadastro ao PDF, o fluxo foi pensado para manter o trabalho clinico organizado.</p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              <article className="border-b-4 border-action-primary bg-surface-default p-6 shadow-sm">
+                <Users className="h-6 w-6 text-action-primary" aria-hidden="true" />
+                <h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">Gestao que acompanha cada paciente</h3>
+                <p className="mt-3 max-w-xl text-body-default text-content-secondary">Acesse os dados do paciente, consulte seus planos e mantenha o acompanhamento em uma interface clara.</p>
+                <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border-subtle pt-5 text-body-small">
+                  <div><p className="font-semibold text-content-primary">Cadastro</p><p className="mt-1 text-content-secondary">Dados essenciais</p></div>
+                  <div><p className="font-semibold text-content-primary">Planos</p><p className="mt-1 text-content-secondary">Historico vinculado</p></div>
+                </div>
+              </article>
+              <article className="border-b-4 border-feedback-info-solid bg-surface-default p-6 shadow-sm">
+                <FileDown className="h-6 w-6 text-feedback-info-text" aria-hidden="true" />
+                <h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">Do planejamento ao documento final</h3>
+                <p className="mt-3 max-w-xl text-body-default text-content-secondary">Monte refeicoes, confira informacoes nutricionais e gere o PDF do plano sem alternar entre ferramentas.</p>
+                <div className="mt-6 flex items-center gap-3 border-t border-border-subtle pt-5 text-body-small text-content-secondary">
+                  <UtensilsCrossed className="h-4 w-4 text-action-primary" aria-hidden="true" /> Refeicoes e opcoes
+                  <FileText className="ml-auto h-4 w-4 text-feedback-info-text" aria-hidden="true" /> PDF
+                </div>
+              </article>
+            </div>
+
+            <div className="mt-8 grid gap-x-8 gap-y-0 border-y border-border-default md:grid-cols-2 xl:grid-cols-3">
+              {resources.map(({ icon: Icon, title, description }) => (
+                <article key={title} className="flex gap-4 border-b border-border-subtle py-6 last:border-b-0 md:[&:nth-last-child(2)]:border-b-0 xl:[&:nth-last-child(-n+3)]:border-b-0">
+                  <Icon className="mt-1 h-5 w-5 shrink-0 text-action-primary" aria-hidden="true" />
+                  <div><h3 className="font-semibold text-content-primary">{title}</h3><p className="mt-1 text-body-small text-content-secondary">{description}</p></div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-24 bg-background-subtle border-t border-border-subtle">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-heading-h2 font-bold text-content-primary">Tudo o que você precisa em um só lugar</h2>
-              <p className="text-body-default text-content-secondary mt-2">Foque no que realmente importa: o resultado do seu paciente.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Feature 1 */}
-              <div className="bg-surface-default p-8 rounded-2xl border border-border-default shadow-sm hover:shadow-md transition-shadow">
-                <div className="bg-brand-50 w-14 h-14 rounded-xl flex items-center justify-center mb-6">
-                  <Utensils className="w-7 h-7 text-action-primary" />
-                </div>
-                <h3 className="text-heading-h4 font-bold text-content-primary mb-3">Planos Inteligentes</h3>
-                <p className="text-body-default text-content-secondary">
-                  Monte planos alimentares de forma ágil com nossa interface intuitiva e cálculo automático de macronutrientes.
-                </p>
-              </div>
+        <section id="como-funciona" className="scroll-mt-6 mx-auto max-w-7xl px-6 py-20">
+          <div className="max-w-2xl"><p className="text-caption font-semibold uppercase text-action-primary">Como funciona</p><h2 className="mt-3 text-heading-h1 font-bold text-content-primary">Do cadastro ao plano alimentar em poucos passos</h2></div>
+          <ol className="mt-10 grid gap-0 border border-border-default md:grid-cols-3 md:divide-x md:divide-divider-default">
+            {[
+              ["Cadastre o paciente", "Adicione as informacoes necessarias para organizar o atendimento."],
+              ["Crie o plano alimentar", "Monte refeicoes, opcoes, alimentos e orientacoes conforme sua conduta profissional."],
+              ["Gere e compartilhe", "Exporte o plano alimentar em PDF para encaminhar ao paciente."],
+            ].map(([title, description], index) => (
+              <li key={title} className="border-b border-border-default p-6 last:border-b-0 md:border-b-0"><span className="text-caption font-bold text-action-primary">ETAPA 0{index + 1}</span><h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">{title}</h3><p className="mt-3 text-body-small text-content-secondary">{description}</p></li>
+            ))}
+          </ol>
+        </section>
 
-              {/* Feature 2 */}
-              <div className="bg-surface-default p-8 rounded-2xl border border-border-default shadow-sm hover:shadow-md transition-shadow">
-                <div className="bg-brand-50 w-14 h-14 rounded-xl flex items-center justify-center mb-6">
-                  <Users className="w-7 h-7 text-action-primary" />
-                </div>
-                <h3 className="text-heading-h4 font-bold text-content-primary mb-3">Gestão de Pacientes</h3>
-                <p className="text-body-default text-content-secondary">
-                  Acompanhe a evolução de cada paciente, armazene históricos e mantenha o prontuário sempre organizado.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="bg-surface-default p-8 rounded-2xl border border-border-default shadow-sm hover:shadow-md transition-shadow">
-                <div className="bg-brand-50 w-14 h-14 rounded-xl flex items-center justify-center mb-6">
-                  <Leaf className="w-7 h-7 text-action-primary" />
-                </div>
-                <h3 className="text-heading-h4 font-bold text-content-primary mb-3">Tabela de Alimentos</h3>
-                <p className="text-body-default text-content-secondary">
-                  Acesso rápido a uma base de dados rica em alimentos, com medidas caseiras e informações nutricionais confiáveis.
-                </p>
-              </div>
-            </div>
+        <section className="border-y border-border-subtle bg-brand-50 py-20">
+          <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="max-w-3xl"><p className="text-caption font-semibold uppercase text-action-primary">Acesso gratuito</p><h2 className="mt-3 text-heading-h1 font-bold text-content-primary">Uma ferramenta de acesso gratuito para nutricionistas</h2><p className="mt-4 text-body-default text-content-secondary">O Nutri Plan foi criado para ampliar o acesso a ferramentas de organizacao e planejamento nutricional, sem exigir uma assinatura mensal para utilizar seus principais recursos.</p></div>
+            <span className="text-body-small font-semibold text-content-secondary">Projeto em evolucao</span>
           </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-2">
+          <article className="border-l-4 border-action-primary pl-6"><ShieldCheck className="h-6 w-6 text-action-primary" aria-hidden="true" /><h2 className="mt-5 text-heading-h2 font-bold text-content-primary">Informacoes de pacientes merecem cuidado</h2><p className="mt-4 text-body-default text-content-secondary">O acesso a area de trabalho exige autenticacao, e a sessao e administrada pelo servidor. O Nutri Plan trata dados de atendimento com a responsabilidade que eles pedem.</p></article>
+          <article id="sobre" className="scroll-mt-6 border-l-4 border-feedback-info-solid pl-6"><Leaf className="h-6 w-6 text-feedback-info-text" aria-hidden="true" /><h2 className="mt-5 text-heading-h2 font-bold text-content-primary">Tecnologia nutricional mais acessivel</h2><p className="mt-4 text-body-default text-content-secondary">O Nutri Plan e um projeto em evolucao, criado para ajudar nutricionistas a organizar atendimentos e produzir planos alimentares de forma mais simples.</p></article>
+        </section>
+
+        <section className="border-y border-border-subtle bg-background-subtle py-16">
+          <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><p className="text-caption font-semibold uppercase text-action-primary">Feedback</p><h2 className="mt-3 text-heading-h2 font-bold text-content-primary">Ajude a construir o Nutri Plan</h2><p className="mt-3 max-w-2xl text-body-default text-content-secondary">Encontrou um problema ou sentiu falta de algum recurso? Compartilhe sua experiencia e ajude a definir as proximas melhorias da plataforma.</p></div><div className="flex flex-wrap gap-3"><span className="inline-flex h-11 items-center rounded-md border border-border-default bg-surface-default px-4 text-button font-semibold text-content-muted">Sugestoes em preparacao</span><span className="inline-flex h-11 items-center rounded-md border border-border-default bg-surface-default px-4 text-button font-semibold text-content-muted">Canal de problemas em preparacao</span></div></div>
+        </section>
+
+        <FaqSection />
+
+        <section className="border-t border-border-subtle bg-brand-900 py-20 text-content-inverse">
+          <div className="mx-auto flex max-w-7xl flex-col gap-7 px-6 lg:flex-row lg:items-end lg:justify-between"><div className="max-w-3xl"><h2 className="text-heading-h1 font-bold">Comece a organizar seus atendimentos com o Nutri Plan</h2><p className="mt-4 text-body-default text-brand-100">Cadastre seus pacientes, crie planos alimentares e gere documentos profissionais sem pagar uma assinatura mensal.</p></div><PrimaryLink inverted>Comecar a criar planos</PrimaryLink></div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border-subtle bg-surface-default py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-body-small text-content-muted">
-          &copy; {new Date().getFullYear()} Nutri Plan. Todos os direitos reservados.
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
