@@ -105,6 +105,7 @@ export default function EditarPacientePage() {
                     sobrenome: patient.sobrenome,
                     email: patient.email || "",
                     dataNascimento: patient.dataNascimento || "",
+                    dataEntregaPrimeiroPlano: patient.dataEntregaPrimeiroPlano || "",
                     sexo: patient.sexo,
                     observacoes: patient.observacoes || "",
                 }}
