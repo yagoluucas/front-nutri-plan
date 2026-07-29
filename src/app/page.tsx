@@ -79,7 +79,7 @@ function PrimaryLink({
   return (
     <Link
       href="/login"
-      className={`inline-flex h-11 items-center justify-center rounded-md px-5 text-button font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+      className={`inline-flex h-11 items-center justify-center rounded-md px-5 text-button font-semibold shadow-sm transition-[background-color,transform,box-shadow] hover:shadow-md active:translate-y-px focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
         inverted
           ? "bg-surface-default text-action-primary hover:bg-brand-50 focus-visible:ring-brand-200"
           : "bg-action-primary text-action-primary-text hover:bg-action-primary-hover focus-visible:ring-action-primary-focus"
@@ -127,34 +127,10 @@ export default function Home() {
         <section aria-label="Diferenciais" className="border-b border-border-subtle bg-surface-muted">
           <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border-default px-6 lg:grid-cols-4 lg:divide-y-0">
             {differentials.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex min-h-24 items-center gap-3 px-4 py-5 first:border-l-0 lg:px-7">
-                <Icon className="h-5 w-5 shrink-0 text-action-primary" aria-hidden="true" />
+              <div key={label} className="group flex min-h-24 items-center gap-3 px-4 py-5 first:border-l-0 lg:px-7">
+                <Icon className="h-5 w-5 shrink-0 text-action-primary transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none" aria-hidden="true" />
                 <span className="text-body-small font-semibold text-content-primary">{label}</span>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-16">
-          <div>
-            <p className="text-caption font-semibold uppercase text-action-primary">Para a rotina de atendimento</p>
-            <h2 className="mt-3 text-heading-h1 font-bold text-content-primary">
-              Mais organizacao no atendimento. Menos trabalho repetitivo.
-            </h2>
-          </div>
-          <div className="divide-y divide-divider-default border-y border-divider-default">
-            {[
-              ["Centralize seus pacientes", "Mantenha informacoes e planos organizados em um unico lugar."],
-              ["Monte planos com mais praticidade", "Organize horarios, refeicoes, opcoes e alimentos durante ou depois da consulta."],
-              ["Entregue um documento profissional", "Gere um PDF organizado e personalizado para encaminhar ao paciente."],
-            ].map(([title, description], index) => (
-              <article key={title} className="grid grid-cols-[2.5rem_1fr] gap-4 py-6 sm:grid-cols-[4rem_1fr]">
-                <span className="text-heading-h3 font-semibold text-action-primary">0{index + 1}</span>
-                <div>
-                  <h3 className="text-heading-h3 font-semibold text-content-primary">{title}</h3>
-                  <p className="mt-2 text-body-default text-content-secondary">{description}</p>
-                </div>
-              </article>
             ))}
           </div>
         </section>
@@ -168,7 +144,7 @@ export default function Home() {
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              <article className="border-b-4 border-action-primary bg-surface-default p-6 shadow-sm">
+              <article className="border-b-4 border-action-primary bg-surface-default p-6 shadow-sm transition-all duration-300 ease-out will-change-transform hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">
                 <Users className="h-6 w-6 text-action-primary" aria-hidden="true" />
                 <h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">Gestao que acompanha cada paciente</h3>
                 <p className="mt-3 max-w-xl text-body-default text-content-secondary">Acesse os dados do paciente, consulte seus planos e mantenha o acompanhamento em uma interface clara.</p>
@@ -177,7 +153,7 @@ export default function Home() {
                   <div><p className="font-semibold text-content-primary">Planos</p><p className="mt-1 text-content-secondary">Historico vinculado</p></div>
                 </div>
               </article>
-              <article className="border-b-4 border-feedback-info-solid bg-surface-default p-6 shadow-sm">
+              <article className="border-b-4 border-feedback-info-solid bg-surface-default p-6 shadow-sm transition-all duration-300 ease-out will-change-transform hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">
                 <FileDown className="h-6 w-6 text-feedback-info-text" aria-hidden="true" />
                 <h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">Do planejamento ao documento final</h3>
                 <p className="mt-3 max-w-xl text-body-default text-content-secondary">Monte refeicoes, confira informacoes nutricionais e gere o PDF do plano sem alternar entre ferramentas.</p>
@@ -207,7 +183,7 @@ export default function Home() {
               ["Crie o plano alimentar", "Monte refeicoes, opcoes, alimentos e orientacoes conforme sua conduta profissional."],
               ["Gere e compartilhe", "Exporte o plano alimentar em PDF para encaminhar ao paciente."],
             ].map(([title, description], index) => (
-              <li key={title} className="border-b border-border-default p-6 last:border-b-0 md:border-b-0"><span className="text-caption font-bold text-action-primary">ETAPA 0{index + 1}</span><h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">{title}</h3><p className="mt-3 text-body-small text-content-secondary">{description}</p></li>
+              <li key={title} className="border-b border-border-default p-6 transition-colors duration-200 ease-out hover:bg-background-subtle last:border-b-0 md:border-b-0 motion-reduce:transition-none"><span className="text-caption font-bold text-action-primary">ETAPA 0{index + 1}</span><h3 className="mt-5 text-heading-h3 font-semibold text-content-primary">{title}</h3><p className="mt-3 text-body-small text-content-secondary">{description}</p></li>
             ))}
           </ol>
         </section>

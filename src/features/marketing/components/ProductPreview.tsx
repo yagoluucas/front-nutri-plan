@@ -2,7 +2,7 @@ import { CalendarDays, FileText, Plus, Users } from "lucide-react";
 
 export default function ProductPreview() {
   return (
-    <div className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-md" aria-label="Demonstracao visual da area de pacientes do Nutri Plan">
+    <div className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-500" aria-label="Demonstracao visual da area de pacientes do Nutri Plan">
       <div className="flex items-center justify-between border-b border-border-default bg-surface-muted px-4 py-3"><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-brand-400" /><span className="h-2.5 w-2.5 rounded-full bg-border-strong" /><span className="h-2.5 w-2.5 rounded-full bg-border-strong" /></div><span className="text-caption font-medium text-content-muted">nutriplan.app</span></div>
       <div className="grid min-h-105 grid-cols-[10rem_1fr]">
         <aside className="hidden border-r border-border-default bg-background-subtle p-4 sm:block"><div className="flex items-center gap-2 text-body-small font-bold text-content-primary"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-action-primary text-caption text-action-primary-text">N</span> Nutri Plan</div><div className="mt-8 space-y-2 text-caption font-medium text-content-secondary"><p>Inicio</p><p className="rounded-md bg-brand-50 px-2 py-2 text-action-primary">Meus pacientes</p><p>Meu perfil</p><p>Receitas</p></div></aside>
