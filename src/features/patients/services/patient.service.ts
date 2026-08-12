@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
     patientFormSchema,
+    firstPlanDeliveryStatusSchema,
     patientSchema,
     patientSummarySchema,
     type PatientFormValues,
@@ -161,6 +162,26 @@ export async function updatePatientApi(patientId: string, values: PatientFormVal
 
     if (!parsedResponse.success) {
         throw new Error("Resposta invalida ao atualizar paciente.");
+    }
+
+    return toPatient(parsedResponse.data.paciente);
+}
+
+export async function updateFirstPlanDeliveryStatusApi(
+    patientId: string,
+    primeiroPlanoEntregue: boolean,
+): Promise<Patient> {
+    const values = firstPlanDeliveryStatusSchema.parse({
+        primeiroPlanoEntregue,
+    });
+    const payload = await requestPatientApi(`/api/pacientes/${encodeURIComponent(patientId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(values),
+    });
+    const parsedResponse = patientResponseSchema.safeParse(payload);
+
+    if (!parsedResponse.success) {
+        throw new Error("Resposta invalida ao atualizar o status do primeiro plano.");
     }
 
     return toPatient(parsedResponse.data.paciente);

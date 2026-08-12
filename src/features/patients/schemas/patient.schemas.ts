@@ -102,6 +102,21 @@ export const patientFormSchema = z
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
+export const firstPlanDeliveryStatusSchema = z
+  .object({
+    primeiroPlanoEntregue: z.boolean(),
+  })
+  .strict();
+
+export type FirstPlanDeliveryStatus = z.infer<
+  typeof firstPlanDeliveryStatusSchema
+>;
+
+export const patientUpdateRequestSchema = z.union([
+  patientFormSchema,
+  firstPlanDeliveryStatusSchema,
+]);
+
 export const patientSummarySchema = z.object({
   id: z.string().trim().min(1),
   nome: z.string().trim().min(1),
@@ -109,6 +124,7 @@ export const patientSummarySchema = z.object({
   email: z.string().optional(),
   dataNascimento: patientFormSchema.shape.dataNascimento,
   dataEntregaPrimeiroPlano: patientFormSchema.shape.dataEntregaPrimeiroPlano,
+  primeiroPlanoEntregue: z.boolean(),
   qtdPlanos: z.number().int().min(0),
   createdAt: z.string().trim().min(1),
   updatedAt: z.string().trim().min(1),
@@ -117,6 +133,7 @@ export const patientSummarySchema = z.object({
 export const patientSchema = patientFormSchema.extend({
   id: z.string().trim().min(1),
   idNutricionista: z.string().trim().min(1),
+  primeiroPlanoEntregue: z.boolean(),
   qtdPlanos: z.number().int().min(0),
   planosAlimentares: z.array(dietPlanRecordSchema),
   createdAt: z.string().trim().min(1),

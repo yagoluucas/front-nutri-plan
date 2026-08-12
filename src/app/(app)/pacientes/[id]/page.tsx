@@ -23,6 +23,7 @@ import PDFGenerator from "@/src/features/diet-plan/components/PDFGenerator";
 import { deleteDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
 import { calculatePlanMicronutrients } from "@/src/features/diet-plan/utils/nutritionCalculations";
 import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
+import { updateFirstPlanDeliveryStatusApi } from "@/src/features/patients/services/patient.service";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
 import { queryKeys } from "@/src/lib/queryKeys";
 
@@ -78,6 +79,7 @@ export default function PacienteDetalhePage() {
         : null;
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
+  const [isUpdatingFirstPlanDelivery, setIsUpdatingFirstPlanDelivery] = useState(false);
   const visiblePlans = useMemo(
     () => patient?.planosAlimentares ?? [],
     [patient?.planosAlimentares],
@@ -94,6 +96,42 @@ export default function PacienteDetalhePage() {
     [visiblePlans],
   );
   const isDeletingPlan = deletingPlanId !== null;
+
+  const handleUpdateFirstPlanDelivery = async (primeiroPlanoEntregue: boolean) => {
+    if (!patient || isUpdatingFirstPlanDelivery) {
+      return;
+    }
+
+    const previousPatient = patient;
+    setIsUpdatingFirstPlanDelivery(true);
+    queryClient.setQueryData(queryKeys.patients.detail(patient.id), {
+      ...patient,
+      primeiroPlanoEntregue,
+    });
+
+    try {
+      const updatedPatient = await updateFirstPlanDeliveryStatusApi(
+        patient.id,
+        primeiroPlanoEntregue,
+      );
+      queryClient.setQueryData(queryKeys.patients.detail(patient.id), updatedPatient);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.patients.list });
+      toast.success(
+        primeiroPlanoEntregue
+          ? "Entrega do primeiro plano confirmada."
+          : "Entrega do primeiro plano marcada como pendente.",
+      );
+    } catch (error) {
+      queryClient.setQueryData(queryKeys.patients.detail(patient.id), previousPatient);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel atualizar o status do primeiro plano.",
+      );
+    } finally {
+      setIsUpdatingFirstPlanDelivery(false);
+    }
+  };
 
   const handleDeletePlan = async (planId: string) => {
     if (!patient || deletingPlanId) {
@@ -263,6 +301,54 @@ export default function PacienteDetalhePage() {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section
+          className={`rounded-lg border p-5 ${patient.primeiroPlanoEntregue
+            ? "border-feedback-success-border bg-feedback-success-bg text-feedback-success-text"
+            : "border-feedback-info-border bg-feedback-info-bg text-feedback-info-text"
+            }`}
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+              <div>
+                <h2 className="text-heading-h4 font-semibold">
+                  {patient.primeiroPlanoEntregue
+                    ? "Primeiro plano entregue"
+                    : "Primeiro plano pendente"}
+                </h2>
+                <p className="mt-1 text-body-small">
+                  {patient.primeiroPlanoEntregue
+                    ? "Desative o controle se precisar voltar a receber os alertas de prazo na lista de pacientes."
+                    : "Ative o controle apos entregar o plano alimentar para interromper os alertas de prazo na lista de pacientes."}
+                </p>
+              </div>
+            </div>
+
+            <label className="flex cursor-pointer items-center gap-3 text-body-small font-medium">
+              <span>{patient.primeiroPlanoEntregue ? "Entregue" : "Nao entregue"}</span>
+              <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  aria-label="Primeiro plano entregue"
+                  checked={patient.primeiroPlanoEntregue}
+                  onChange={(event) => void handleUpdateFirstPlanDelivery(event.target.checked)}
+                  disabled={isUpdatingFirstPlanDelivery}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="h-full w-full rounded-full border border-feedback-info-border bg-surface-default transition-colors peer-checked:border-feedback-success-solid peer-checked:bg-feedback-success-solid peer-focus-visible:ring-2 peer-focus-visible:ring-action-primary-focus peer-disabled:cursor-not-allowed peer-disabled:opacity-60"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-feedback-info-solid shadow-sm transition-transform peer-checked:translate-x-5 peer-checked:bg-surface-default"
+                />
+              </span>
+            </label>
+          </div>
         </section>
 
         <section className="rounded-lg border border-border-default bg-surface-default p-4 shadow-sm">

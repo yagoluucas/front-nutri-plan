@@ -6,7 +6,7 @@ import {
   readResponseBody,
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
-import { patientFormSchema } from "@/src/features/patients/schemas/patient.schemas";
+import { patientUpdateRequestSchema } from "@/src/features/patients/schemas/patient.schemas";
 
 interface PatientRouteContext {
   params: Promise<{
@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest, context: PatientRouteContext) 
     return invalidPatientResponse();
   }
 
-  const parsedPatient = patientFormSchema.safeParse(requestBody);
+  const parsedPatient = patientUpdateRequestSchema.safeParse(requestBody);
 
   if (!parsedPatient.success) {
     return invalidPatientResponse(

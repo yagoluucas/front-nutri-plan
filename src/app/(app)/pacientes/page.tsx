@@ -34,6 +34,98 @@ function formatBirthDate(value?: string) {
     }).format(date);
 }
 
+function getFirstPlanDeadlineStatus(value?: string) {
+    if (!value) {
+        return {
+            className: "bg-surface-muted text-content-secondary",
+            label: "Data nao informada",
+        };
+    }
+
+    const deadline = new Date(`${value}T00:00:00`);
+
+    if (Number.isNaN(deadline.getTime())) {
+        return {
+            className: "bg-surface-muted text-content-secondary",
+            label: "Data nao informada",
+        };
+    }
+
+    const today = new Date();
+    const todayAtMidnight = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+    );
+    const remainingDays = Math.round(
+        (deadline.getTime() - todayAtMidnight.getTime()) / 86_400_000,
+    );
+    const formattedDeadline = new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    }).format(deadline);
+
+    if (remainingDays < 0) {
+        const delayedDays = Math.abs(remainingDays);
+
+        return {
+            className: "bg-feedback-error-bg text-feedback-error-text",
+            label: `Atrasado ha ${delayedDays} ${delayedDays === 1 ? "dia" : "dias"}`,
+            formattedDeadline,
+        };
+    }
+
+    if (remainingDays <= 10) {
+        return {
+            className: "bg-feedback-warning-bg text-feedback-warning-text",
+            label: remainingDays === 0 ? "Entrega hoje" : `Faltam ${remainingDays} dias`,
+            formattedDeadline,
+        };
+    }
+
+    if (remainingDays <= 20) {
+        return {
+            className: "bg-feedback-info-bg text-feedback-info-text",
+            label: `Prazo ok: ${remainingDays} dias`,
+            formattedDeadline,
+        };
+    }
+
+    return {
+        className: "bg-surface-muted text-content-secondary",
+        label: `Faltam ${remainingDays} dias`,
+        formattedDeadline,
+    };
+}
+
+function FirstPlanDeadline({
+    date,
+    isDelivered,
+}: {
+    date?: string;
+    isDelivered: boolean;
+}) {
+    if (isDelivered) {
+        return (
+            <span className="inline-flex rounded-sm bg-feedback-success-bg px-2 py-1 text-caption font-medium text-feedback-success-text">
+                Plano entregue
+            </span>
+        );
+    }
+
+    const status = getFirstPlanDeadlineStatus(date);
+
+    return (
+        <span className={`inline-flex flex-col rounded-sm px-2 py-1 text-caption font-medium ${status.className}`}>
+            <span>{status.label}</span>
+            {status.formattedDeadline && (
+                <span className="font-normal">{status.formattedDeadline}</span>
+            )}
+        </span>
+    );
+}
+
 export default function PacientesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const {
@@ -130,12 +222,13 @@ export default function PacientesPage() {
             ) : (
                 <section className="overflow-hidden rounded-lg border border-border-default bg-surface-default shadow-sm">
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-190 text-left text-body-small">
+                        <table className="w-full min-w-[72rem] text-left text-body-small">
                             <thead className="bg-surface-muted text-content-secondary">
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Paciente</th>
                                     <th className="px-4 py-3 font-medium">Nascimento</th>
                                     <th className="px-4 py-3 font-medium">Planos</th>
+                                    <th className="px-4 py-3 font-medium">Prazo entrega primeiro plano</th>
                                     <th className="px-4 py-3 font-medium">Atualizado</th>
                                     <th className="px-4 py-3 text-right font-medium">Acoes</th>
                                 </tr>
@@ -159,6 +252,12 @@ export default function PacientesPage() {
                                             <span className="inline-flex items-center rounded-sm bg-feedback-info-bg px-2 py-1 text-caption font-medium text-feedback-info-text">
                                                 {patient.qtdPlanos} {patient.qtdPlanos === 1 ? "plano" : "planos"}
                                             </span>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <FirstPlanDeadline
+                                                date={patient.dataEntregaPrimeiroPlano}
+                                                isDelivered={patient.primeiroPlanoEntregue}
+                                            />
                                         </td>
                                         <td className="px-4 py-4 text-content-secondary">
                                             {formatUpdatedAt(patient.updatedAt)}
