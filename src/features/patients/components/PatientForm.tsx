@@ -10,6 +10,7 @@ import {
   getTodayDateInputValue,
   patientFormSchema,
   PatientFormValues,
+  getBirthdayMaximumValue,
 } from "../schemas/patient.schemas";
 
 interface PatientFormProps {
@@ -33,6 +34,7 @@ export default function PatientForm({
   onSubmit,
 }: PatientFormProps) {
   const minimumDeliveryDate = getTodayDateInputValue();
+  const maxBirthday = getBirthdayMaximumValue();
   const {
     register,
     handleSubmit,
@@ -97,6 +99,7 @@ export default function PatientForm({
             id="dataNascimento"
             type="date"
             {...register("dataNascimento")}
+            max={maxBirthday}
             error={errors.dataNascimento?.message}
           />
         </div>
@@ -132,7 +135,9 @@ export default function PatientForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dataEntregaPrimeiroPlano">Data da Entrega do Primeiro Plano</Label>
+          <Label htmlFor="dataEntregaPrimeiroPlano">
+            Data da Entrega do Primeiro Plano
+          </Label>
           <Input
             id="dataEntregaPrimeiroPlano"
             type="date"
