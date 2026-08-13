@@ -33,6 +33,7 @@ export const config = {
     dashboard: {
         monthsInOverview: 6,
         recentPatientsLimit: 5,
+        firstPlanDeadlinePatientsLimit: 5,
         planDistribution: {
             noPlan: 0,
             onePlan: 1,

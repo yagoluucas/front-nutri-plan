@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CalendarDays, FileText, Plus, Search, Users } from "lucide-react";
 import Input from "@/src/components/ui/Input";
 import { usePatientsQuery } from "@/src/features/patients/hooks/usePatientQueries";
+import { getFirstPlanDeadline } from "@/src/features/patients/utils/firstPlanDeadline";
 
 function formatUpdatedAt(value: string) {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -35,39 +36,25 @@ function formatBirthDate(value?: string) {
 }
 
 function getFirstPlanDeadlineStatus(value?: string) {
-    if (!value) {
+    const deadline = getFirstPlanDeadline({
+        date: value,
+        isDelivered: false,
+    });
+
+    if (!deadline.deadline || deadline.remainingDays === null) {
         return {
             className: "bg-surface-muted text-content-secondary",
             label: "Data nao informada",
         };
     }
-
-    const deadline = new Date(`${value}T00:00:00`);
-
-    if (Number.isNaN(deadline.getTime())) {
-        return {
-            className: "bg-surface-muted text-content-secondary",
-            label: "Data nao informada",
-        };
-    }
-
-    const today = new Date();
-    const todayAtMidnight = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-    );
-    const remainingDays = Math.round(
-        (deadline.getTime() - todayAtMidnight.getTime()) / 86_400_000,
-    );
     const formattedDeadline = new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-    }).format(deadline);
+    }).format(deadline.deadline);
 
-    if (remainingDays < 0) {
-        const delayedDays = Math.abs(remainingDays);
+    if (deadline.status === "critical") {
+        const delayedDays = Math.abs(deadline.remainingDays);
 
         return {
             className: "bg-feedback-error-bg text-feedback-error-text",
@@ -76,25 +63,25 @@ function getFirstPlanDeadlineStatus(value?: string) {
         };
     }
 
-    if (remainingDays <= 10) {
+    if (deadline.status === "nearDeadline") {
         return {
             className: "bg-feedback-warning-bg text-feedback-warning-text",
-            label: remainingDays === 0 ? "Entrega hoje" : `Faltam ${remainingDays} dias`,
+            label: deadline.remainingDays === 0 ? "Entrega hoje" : `Faltam ${deadline.remainingDays} dias`,
             formattedDeadline,
         };
     }
 
-    if (remainingDays <= 20) {
+    if (deadline.status === "onSchedule") {
         return {
             className: "bg-feedback-info-bg text-feedback-info-text",
-            label: `Prazo ok: ${remainingDays} dias`,
+            label: `Prazo ok: ${deadline.remainingDays} dias`,
             formattedDeadline,
         };
     }
 
     return {
         className: "bg-surface-muted text-content-secondary",
-        label: `Faltam ${remainingDays} dias`,
+        label: `Faltam ${deadline.remainingDays} dias`,
         formattedDeadline,
     };
 }

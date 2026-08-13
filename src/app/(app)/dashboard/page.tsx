@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
     ArrowRight,
     CircleAlert,
+    CircleCheck,
     FileText,
     Plus,
     TrendingUp,
@@ -16,6 +17,7 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
+    Cell,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -23,6 +25,10 @@ import {
 } from "recharts";
 import { config } from "@/src/constants/config";
 import { usePatientsQuery } from "@/src/features/patients/hooks/usePatientQueries";
+import {
+    getFirstPlanDeadline,
+    type FirstPlanDeadlineStatus,
+} from "@/src/features/patients/utils/firstPlanDeadline";
 
 interface MetricCardProps {
     title: string;
@@ -67,8 +73,8 @@ function parseDate(value: string) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatPatientDate(value: string) {
-    const date = parseDate(value);
+function formatPatientDate(value: string | Date) {
+    const date = value instanceof Date ? value : parseDate(value);
 
     if (!date) {
         return "Data indisponivel";
@@ -92,6 +98,29 @@ function getMonthEnd(referenceDate: Date) {
 function getMonthKey(date: Date) {
     return `${date.getFullYear()}-${date.getMonth()}`;
 }
+
+function getFirstPlanDeadlineLabel(
+    status: FirstPlanDeadlineStatus,
+    remainingDays: number,
+) {
+    if (status === "critical") {
+        const delayedDays = Math.abs(remainingDays);
+        return `Atrasado ha ${delayedDays} ${delayedDays === 1 ? "dia" : "dias"}`;
+    }
+
+    if (status === "nearDeadline") {
+        return remainingDays === 0 ? "Entrega hoje" : `Faltam ${remainingDays} dias`;
+    }
+
+    return `Prazo ok: ${remainingDays} dias`;
+}
+
+const firstPlanDeadlineStatusClasses: Record<FirstPlanDeadlineStatus, string> = {
+    critical: "bg-feedback-error-bg text-feedback-error-text",
+    nearDeadline: "bg-feedback-warning-bg text-feedback-warning-text",
+    onSchedule: "bg-feedback-info-bg text-feedback-info-text",
+    outsideAlert: "bg-surface-muted text-content-secondary",
+};
 
 export default function DashboardPage() {
     const {
@@ -157,6 +186,42 @@ export default function DashboardPage() {
                 return secondDate - firstDate;
             })
             .slice(0, config.dashboard.recentPatientsLimit);
+        const firstPlanDeadlines = patients.map((patient) => ({
+            patient,
+            deadline: getFirstPlanDeadline({
+                date: patient.dataEntregaPrimeiroPlano,
+                isDelivered: patient.primeiroPlanoEntregue,
+            }),
+        }));
+        const firstPlanDeadlineDistribution = [
+            {
+                label: "Criticos",
+                status: "critical" as const,
+                fill: "var(--color-feedback-error-solid)",
+            },
+            {
+                label: "Proximos do prazo",
+                status: "nearDeadline" as const,
+                fill: "var(--color-feedback-warning-solid)",
+            },
+            {
+                label: "Dentro do prazo",
+                status: "onSchedule" as const,
+                fill: "var(--color-feedback-info-solid)",
+            },
+        ].map((group) => ({
+            ...group,
+            pacientes: firstPlanDeadlines.filter(
+                ({ deadline }) => deadline.status === group.status,
+            ).length,
+        }));
+        const actionableFirstPlanDeadlines = firstPlanDeadlines
+            .filter(({ deadline }) => (
+                deadline.status === "critical" || deadline.status === "nearDeadline"
+            ))
+            .sort((firstPatient, secondPatient) => (
+                (firstPatient.deadline.remainingDays ?? 0) - (secondPatient.deadline.remainingDays ?? 0)
+            ));
 
         return {
             totalPlans,
@@ -167,6 +232,12 @@ export default function DashboardPage() {
             growthData,
             planDistribution,
             recentPatients,
+            firstPlanDeadlineDistribution,
+            actionableFirstPlanDeadlineCount: actionableFirstPlanDeadlines.length,
+            actionableFirstPlanDeadlines: actionableFirstPlanDeadlines.slice(
+                0,
+                config.dashboard.firstPlanDeadlinePatientsLimit,
+            ),
         };
     }, [patients]);
 
@@ -252,6 +323,139 @@ export default function DashboardPage() {
                             icon={CircleAlert}
                             tone="warning"
                         />
+                    </section>
+
+                    <section className="rounded-lg border border-border-default bg-surface-default shadow-sm">
+                        <div className="flex flex-col gap-3 border-b border-border-default p-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-heading-h3 font-semibold text-content-primary">Prazos do primeiro plano</h2>
+                                <p className="mt-1 text-body-small text-content-secondary">
+                                    Priorize entregas pendentes antes que comprometam o acompanhamento do paciente.
+                                </p>
+                            </div>
+                            <Link
+                                href="/pacientes"
+                                className="inline-flex shrink-0 items-center text-button font-semibold text-action-ghost-text transition-colors hover:text-action-ghost-text-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-ghost-focus"
+                            >
+                                Ver pacientes
+                                <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                            </Link>
+                        </div>
+
+                        <div className="grid gap-6 p-5 lg:grid-cols-2">
+                            <div>
+                                <div
+                                    className="h-64 w-full"
+                                    role="img"
+                                    aria-label={`Grafico de prazos do primeiro plano: ${dashboardData.firstPlanDeadlineDistribution[0].pacientes} criticos, ${dashboardData.firstPlanDeadlineDistribution[1].pacientes} proximos do prazo e ${dashboardData.firstPlanDeadlineDistribution[2].pacientes} dentro do prazo.`}
+                                >
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={dashboardData.firstPlanDeadlineDistribution}
+                                            layout="vertical"
+                                            margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                                        >
+                                            <CartesianGrid stroke="var(--color-border-subtle)" strokeDasharray="3 3" horizontal={false} />
+                                            <XAxis
+                                                type="number"
+                                                allowDecimals={false}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: "var(--color-content-muted)", fontSize: 12 }}
+                                            />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="label"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: "var(--color-content-muted)", fontSize: 12 }}
+                                                width={116}
+                                            />
+                                            <Tooltip
+                                                cursor={{ fill: "var(--color-background-subtle)" }}
+                                                contentStyle={{
+                                                    backgroundColor: "var(--color-surface-default)",
+                                                    border: "1px solid var(--color-border-default)",
+                                                    borderRadius: "var(--radius-md)",
+                                                    boxShadow: "var(--shadow-md)",
+                                                }}
+                                                labelStyle={{ color: "var(--color-content-secondary)" }}
+                                                itemStyle={{ color: "var(--color-content-primary)" }}
+                                            />
+                                            <Bar
+                                                dataKey="pacientes"
+                                                name="Pacientes"
+                                                radius={[0, 4, 4, 0]}
+                                                maxBarSize={36}
+                                            >
+                                                {dashboardData.firstPlanDeadlineDistribution.map((group) => (
+                                                    <Cell key={group.status} fill={group.fill} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="mt-3 text-caption text-content-muted">
+                                    Critico: prazo vencido. Proximo do prazo: entre hoje e 10 dias. Dentro do prazo: entre 11 e 20 dias.
+                                </p>
+                            </div>
+
+                            <div className="rounded-md bg-surface-muted p-4">
+                                {dashboardData.actionableFirstPlanDeadlineCount === 0 ? (
+                                    <div className="flex h-full min-h-52 flex-col items-center justify-center text-center">
+                                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-feedback-success-bg text-feedback-success-text">
+                                            <CircleCheck className="h-5 w-5" aria-hidden="true" />
+                                        </span>
+                                        <h3 className="mt-4 text-heading-h4 font-semibold text-content-primary">Nenhum primeiro plano requer atencao hoje</h3>
+                                        <p className="mt-2 max-w-md text-body-small text-content-secondary">
+                                            Os proximos prazos pendentes estao dentro da janela de acompanhamento.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-baseline justify-between gap-4">
+                                            <div>
+                                                <h3 className="text-heading-h4 font-semibold text-content-primary">Requerem atencao</h3>
+                                                <p className="mt-1 text-body-small text-content-secondary">
+                                                    {dashboardData.actionableFirstPlanDeadlineCount} {dashboardData.actionableFirstPlanDeadlineCount === 1 ? "paciente pendente" : "pacientes pendentes"}
+                                                </p>
+                                            </div>
+                                            {dashboardData.actionableFirstPlanDeadlineCount > config.dashboard.firstPlanDeadlinePatientsLimit && (
+                                                <span className="text-caption text-content-muted">
+                                                    Exibindo {config.dashboard.firstPlanDeadlinePatientsLimit}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-4 divide-y divide-divider-default">
+                                            {dashboardData.actionableFirstPlanDeadlines.map(({ patient, deadline }) => (
+                                                <div key={patient.id} className="flex flex-col gap-3 py-3 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-semibold text-content-primary">
+                                                            {patient.nome} {patient.sobrenome}
+                                                        </p>
+                                                        <p className="mt-1 text-body-small text-content-secondary">
+                                                            Entrega: {deadline.deadline ? formatPatientDate(deadline.deadline) : "Data indisponivel"}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex shrink-0 items-center gap-3">
+                                                        <span className={`inline-flex rounded-sm px-2 py-1 text-caption font-medium ${firstPlanDeadlineStatusClasses[deadline.status]}`}>
+                                                            {getFirstPlanDeadlineLabel(deadline.status, deadline.remainingDays ?? 0)}
+                                                        </span>
+                                                        <Link
+                                                            href={`/pacientes/${patient.id}`}
+                                                            className="inline-flex h-9 items-center justify-center rounded-md bg-action-ghost-bg px-3 text-button font-semibold text-action-ghost-text transition-colors hover:bg-action-ghost-bg-hover hover:text-action-ghost-text-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-ghost-focus"
+                                                        >
+                                                            Abrir
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </section>
 
                     <section className="grid gap-6 xl:grid-cols-5">

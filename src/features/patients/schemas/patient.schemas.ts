@@ -78,6 +78,15 @@ const optionalFutureOrCurrentDate = z.preprocess(
     .optional(),
 );
 
+export const firstPlanDeliveryDateSchema = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data invalida.")
+    .optional(),
+);
+
 export const patientFormSchema = z
   .object({
     nome: z
@@ -123,7 +132,7 @@ export const patientSummarySchema = z.object({
   sobrenome: z.string().trim().min(1),
   email: z.string().optional(),
   dataNascimento: patientFormSchema.shape.dataNascimento,
-  dataEntregaPrimeiroPlano: patientFormSchema.shape.dataEntregaPrimeiroPlano,
+  dataEntregaPrimeiroPlano: firstPlanDeliveryDateSchema,
   primeiroPlanoEntregue: z.boolean(),
   qtdPlanos: z.number().int().min(0),
   createdAt: z.string().trim().min(1),

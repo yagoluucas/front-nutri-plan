@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
     patientFormSchema,
     firstPlanDeliveryStatusSchema,
+    firstPlanDeliveryDateSchema,
     patientSchema,
     patientSummarySchema,
     type PatientFormValues,
@@ -11,7 +12,9 @@ import { hydrateBackendPlan } from "../../diet-plan/services/dietPlan.service";
 import { fetchWithSession } from "../../auth/services/session.service";
 import { persistedDietPlanSchema } from "../../diet-plan/schemas/dietPlan.schemas";
 
-const apiPatientSchema = patientSchema.omit({ planosAlimentares: true });
+const apiPatientSchema = patientSchema
+    .omit({ planosAlimentares: true })
+    .extend({ dataEntregaPrimeiroPlano: firstPlanDeliveryDateSchema });
 
 const listPatientsResponseSchema = z.object({
     pacientes: z.array(patientSummarySchema),
