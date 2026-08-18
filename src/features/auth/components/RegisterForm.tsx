@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, RegisterFormValues } from "../schemas/auth.schemas";
@@ -8,36 +9,55 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-    getPostAuthRedirectPath,
-    registerApi,
-} from "../services/auth.service";
+import { registerApi } from "../services/auth.service";
+import ResendConfirmationForm from "./ResendConfirmationForm";
 
 interface RegisterFormProps {
     onSwitchToLogin: () => void;
 }
 
 export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
-    const router = useRouter();
+    const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.input<typeof registerSchema>, unknown, RegisterFormValues>({
         resolver: zodResolver(registerSchema),
     });
 
     const onSubmit = async (data: RegisterFormValues) => {
         try {
-            const response = await registerApi(data);
-            toast.success(response.message || "Cadastro realizado com sucesso!", {
-                description: "Você será direcionado para criar seu plano alimentar.",
-            });
-            await new Promise((resolve) => setTimeout(resolve, 1200));
-            router.replace(getPostAuthRedirectPath());
-            router.refresh();
+            await registerApi(data);
+            setConfirmationEmail(data.email);
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao realizar cadastro.");
         }
     };
+
+    if (confirmationEmail) {
+        return (
+            <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 ease-in-out">
+                <div className="rounded-lg border border-feedback-success-border bg-feedback-success-bg p-6 text-center">
+                    <h1 className="text-heading-h2 font-bold text-feedback-success-text">Verifique seu e-mail</h1>
+                    <p className="mt-3 text-body-default text-content-secondary" role="status">
+                        Enviamos um link de confirmação para o e-mail informado no cadastro. Confira também a caixa de spam.
+                    </p>
+                </div>
+
+                <div className="mt-8">
+                    <ResendConfirmationForm initialEmail={confirmationEmail} />
+                </div>
+
+                <div className="mt-8 text-center">
+                    <button
+                        type="button"
+                        onClick={onSwitchToLogin}
+                        className="font-semibold text-brand-600 hover:text-brand-700 transition-colors bg-transparent border-none p-0 cursor-pointer"
+                    >
+                        Voltar para o login
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-500 ease-in-out">

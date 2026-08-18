@@ -42,6 +42,8 @@ const TOKEN_KEYS = new Set([
   "jwt",
 ]);
 
+const SAFE_RATE_LIMIT_HEADERS = ["retry-after", "ratelimit-reset"] as const;
+
 type RefreshAttempt = {
   tokens: SessionTokens | null;
   invalid: boolean;
@@ -318,16 +320,41 @@ export function authErrorResponse(
   status: number,
   fallbackMessage: string,
 ) {
-  const safePayload = sanitizeAuthPayload(payload);
-
-  if (isRecord(safePayload)) {
-    return NextResponse.json(safePayload, { status });
-  }
-
   return NextResponse.json(
-    { message: getResponseMessage(payload, fallbackMessage) },
+    {
+      message: getResponseMessage(payload, fallbackMessage),
+      error: true,
+      statusCode: status,
+    },
     { status },
   );
+}
+
+function isSafeRateLimitHeader(name: (typeof SAFE_RATE_LIMIT_HEADERS)[number], value: string) {
+  if (!value || value.length > 64) {
+    return false;
+  }
+
+  if (name === "retry-after") {
+    return /^\d{1,10}$/.test(value) || !Number.isNaN(Date.parse(value));
+  }
+
+  return /^\d{1,12}$/.test(value);
+}
+
+export function copySafeRateLimitHeaders(
+  response: NextResponse,
+  upstreamHeaders: Headers,
+) {
+  for (const headerName of SAFE_RATE_LIMIT_HEADERS) {
+    const headerValue = upstreamHeaders.get(headerName)?.trim();
+
+    if (headerValue && isSafeRateLimitHeader(headerName, headerValue)) {
+      response.headers.set(headerName, headerValue);
+    }
+  }
+
+  return response;
 }
 
 export function authSuccessResponse(
