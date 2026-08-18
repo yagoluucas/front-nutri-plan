@@ -1,78 +1,124 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { DEFAULT_AUTH_REDIRECT, LOGIN_ROUTE } from "../constants";
+import { queryKeys } from "@/src/lib/queryKeys";
+import { useProfile } from "@/src/features/profile/ProfileProvider";
+import { getProfileApi } from "@/src/features/profile/services/profile.service";
 import {
-  redirectToLogin,
-  refreshSession,
+  registerSessionValidator,
+  revalidateSessionIdentity,
+  subscribeToLogout,
 } from "@/src/features/auth/services/session.service";
 
-const REFRESH_INTERVAL_MS = 8 * 60 * 1_000;
-const UNAVAILABLE_RETRY_MS = 30 * 1_000;
-const PROTECTED_ROUTES = ["/dashboard", "/meu-perfil", "/pacientes", "/plano"];
+const SESSION_VALIDATION_TIMEOUT_MS = 20_000;
 
-function isProtectedRoute(pathname: string) {
-  return PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+async function getProfileWithTimeout() {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, SESSION_VALIDATION_TIMEOUT_MS);
+
+  try {
+    return await getProfileApi(controller.signal);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
-export function SessionManager() {
-  const pathname = usePathname();
-  const protectedRoute = isProtectedRoute(pathname);
+export function SessionManager({ children }: Readonly<{ children: ReactNode }>) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { profile } = useProfile();
+  const displayedUserIdRef = useRef<string | null>(null);
+  const profileIdRef = useRef(profile.id);
+  const invalidatedRef = useRef(false);
+  const activeRef = useRef(true);
+  const [sessionIsBlocked, setSessionIsBlocked] = useState(false);
 
-  useEffect(() => {
-    if (!protectedRoute) {
+  const clearRenderedSession = useCallback(() => {
+    invalidatedRef.current = true;
+    displayedUserIdRef.current = null;
+    setSessionIsBlocked(true);
+    queryClient.clear();
+  }, [queryClient]);
+
+  const handleLogout = useCallback(() => {
+    clearRenderedSession();
+    router.replace(LOGIN_ROUTE);
+    router.refresh();
+  }, [clearRenderedSession, router]);
+
+  const validateIdentity = useCallback(async () => {
+    const displayedUserId = displayedUserIdRef.current
+      || profileIdRef.current
+      || null;
+
+    try {
+      const currentProfile = await getProfileWithTimeout();
+
+      if (!activeRef.current || invalidatedRef.current) {
+        return false;
+      }
+
+      if (displayedUserId && displayedUserId !== currentProfile.id) {
+        clearRenderedSession();
+        window.location.replace(DEFAULT_AUTH_REDIRECT);
+        return false;
+      }
+
+      displayedUserIdRef.current = currentProfile.id;
+      queryClient.setQueryData(queryKeys.profile, currentProfile);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [clearRenderedSession, queryClient]);
+
+  const revalidateActiveSession = useCallback(() => {
+    if (invalidatedRef.current) {
       return;
     }
 
-    let active = true;
-    let retryTimeoutId: number | undefined;
+    void revalidateSessionIdentity();
+  }, []);
 
-    const renew = async () => {
-      const result = await refreshSession();
+  useEffect(() => {
+    profileIdRef.current = profile.id;
 
-      if (!active) {
-        return;
-      }
+    if (profile.id && !displayedUserIdRef.current) {
+      displayedUserIdRef.current = profile.id;
+    }
+  }, [profile.id]);
 
-      if (result === "invalid") {
-        redirectToLogin();
-        return;
-      }
-
-      if (result === "unavailable") {
-        retryTimeoutId = window.setTimeout(() => {
-          void renew();
-        }, UNAVAILABLE_RETRY_MS);
-      }
-    };
-
-    void renew();
-
-    const intervalId = window.setInterval(() => {
-      void renew();
-    }, REFRESH_INTERVAL_MS);
+  useEffect(() => {
+    activeRef.current = true;
+    const unregisterValidator = registerSessionValidator(validateIdentity);
+    const unsubscribeFromLogout = subscribeToLogout(handleLogout);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void renew();
+        revalidateActiveSession();
       }
     };
 
+    const handlePageShow = () => revalidateActiveSession();
+
+    window.addEventListener("focus", revalidateActiveSession);
+    window.addEventListener("pageshow", handlePageShow);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      active = false;
-      window.clearInterval(intervalId);
-
-      if (retryTimeoutId !== undefined) {
-        window.clearTimeout(retryTimeoutId);
-      }
-
+      activeRef.current = false;
+      unregisterValidator();
+      unsubscribeFromLogout();
+      window.removeEventListener("focus", revalidateActiveSession);
+      window.removeEventListener("pageshow", handlePageShow);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [protectedRoute]);
+  }, [handleLogout, revalidateActiveSession, validateIdentity]);
 
-  return null;
+  return sessionIsBlocked ? null : children;
 }

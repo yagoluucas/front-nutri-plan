@@ -1,92 +1,127 @@
-const REFRESH_RETRY_DELAY_MS = 250;
+import { z } from "zod";
 
-type RefreshResult = "refreshed" | "invalid" | "unavailable";
+const AUTH_CHANNEL_NAME = "nutri-plan-auth";
+const SESSION_INVALIDATED_EVENT = "nutri-plan-session-invalidated";
+const SAFE_REQUEST_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const authChannelMessageSchema = z
+  .object({ type: z.literal("logout") })
+  .strict();
 
-let refreshPromise: Promise<RefreshResult> | null = null;
+type SessionValidator = () => Promise<boolean>;
+type ValidationRequest = {
+  validator: SessionValidator;
+  promise: Promise<boolean>;
+};
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+let validationRequest: ValidationRequest | null = null;
+let sessionValidator: SessionValidator | null = null;
+let authChannel: BroadcastChannel | null = null;
+
+function getAuthChannel() {
+  if (typeof window === "undefined" || !("BroadcastChannel" in window)) {
+    return null;
+  }
+
+  authChannel ??= new BroadcastChannel(AUTH_CHANNEL_NAME);
+  return authChannel;
 }
 
-async function requestRefresh(attempt = 0): Promise<RefreshResult> {
-  try {
-    const response = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (response.ok) {
-      return "refreshed";
-    }
-
-    if (response.status === 409 && attempt === 0) {
-      await wait(REFRESH_RETRY_DELAY_MS);
-      return requestRefresh(1);
-    }
-
-    if ([401, 403].includes(response.status)) {
-      return "invalid";
-    }
-
-    return "unavailable";
-  } catch {
-    return "unavailable";
+function dispatchSessionInvalidated() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SESSION_INVALIDATED_EVENT));
   }
 }
 
-export function refreshSession() {
-  if (!refreshPromise) {
-    refreshPromise = requestRefresh().finally(() => {
-      refreshPromise = null;
-    });
-  }
-
-  return refreshPromise;
+export function notifyLogout() {
+  getAuthChannel()?.postMessage({ type: "logout" });
+  dispatchSessionInvalidated();
 }
 
-export function redirectToLogin() {
+export function subscribeToLogout(onLogout: () => void) {
   if (typeof window === "undefined") {
-    return;
+    return () => undefined;
   }
 
-  const redirectTo = `${window.location.pathname}${window.location.search}`;
-  const loginUrl = new URL("/login", window.location.origin);
-  loginUrl.searchParams.set("sessionExpired", "1");
-  loginUrl.searchParams.set("redirectTo", redirectTo);
-  window.location.replace(loginUrl.toString());
+  const channel = getAuthChannel();
+  const handleChannelMessage = (event: MessageEvent<unknown>) => {
+    if (authChannelMessageSchema.safeParse(event.data).success) {
+      onLogout();
+    }
+  };
+  const handleLocalInvalidation = () => onLogout();
+
+  channel?.addEventListener("message", handleChannelMessage);
+  window.addEventListener(SESSION_INVALIDATED_EVENT, handleLocalInvalidation);
+
+  return () => {
+    channel?.removeEventListener("message", handleChannelMessage);
+    window.removeEventListener(
+      SESSION_INVALIDATED_EVENT,
+      handleLocalInvalidation,
+    );
+  };
+}
+
+export function registerSessionValidator(validator: SessionValidator) {
+  sessionValidator = validator;
+
+  return () => {
+    if (sessionValidator === validator) {
+      sessionValidator = null;
+    }
+  };
+}
+
+export function revalidateSessionIdentity() {
+  const validator = sessionValidator;
+
+  if (!validator) {
+    return Promise.resolve(false);
+  }
+
+  if (validationRequest?.validator === validator) {
+    return validationRequest.promise;
+  }
+
+  const request: ValidationRequest = {
+    validator,
+    promise: validator(),
+  };
+
+  request.promise = request.promise.finally(() => {
+    if (validationRequest === request) {
+      validationRequest = null;
+    }
+  });
+  validationRequest = request;
+
+  return request.promise;
 }
 
 export async function fetchWithSession(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
-  const request = () =>
-    fetch(input, {
-      ...init,
-      credentials: "include",
-    });
+  const method = (init?.method || "GET").toUpperCase();
 
-  let response = await request();
+  if (!SAFE_REQUEST_METHODS.has(method)) {
+    const identityIsCurrent = await revalidateSessionIdentity();
 
-  if (response.status !== 401) {
-    return response;
-  }
-
-  const refreshResult = await refreshSession();
-
-  if (refreshResult === "refreshed") {
-    response = await request();
-
-    if (response.status === 401) {
-      redirectToLogin();
+    if (!identityIsCurrent) {
+      throw new Error(
+        "Nao foi possivel validar a sessao. Tente novamente.",
+      );
     }
-
-    return response;
   }
 
-  if (refreshResult === "invalid") {
-    redirectToLogin();
+  const response = await fetch(input, {
+    ...init,
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (response.status === 401) {
+    notifyLogout();
   }
 
   return response;

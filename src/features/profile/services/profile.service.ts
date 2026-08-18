@@ -122,9 +122,12 @@ function createProfileJsonPayload(
   });
 }
 
-export async function getProfileApi(): Promise<NutritionistProfile> {
+export async function getProfileApi(
+  signal?: AbortSignal,
+): Promise<NutritionistProfile> {
   const payload = await requestProfileApi("/api/nutricionista/perfil", {
     method: "GET",
+    signal,
   });
 
   return parseProfilePayload(payload, "Resposta invalida ao buscar perfil.");

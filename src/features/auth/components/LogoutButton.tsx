@@ -1,19 +1,15 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { LOGIN_ROUTE } from "../constants";
 import { logoutApi } from "../services/auth.service";
+import { notifyLogout } from "../services/session.service";
 
 interface LogoutButtonProps {
     isCollapsed?: boolean;
 }
 
 export default function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
-    const router = useRouter();
-    const queryClient = useQueryClient();
     const labelTransitionClass = isCollapsed
         ? "max-w-0 -translate-x-1 opacity-0"
         : "max-w-20 translate-x-0 opacity-100";
@@ -24,9 +20,7 @@ export default function LogoutButton({ isCollapsed = false }: LogoutButtonProps)
         } catch {
             toast.error("Não foi possível encerrar a sessão no servidor.");
         } finally {
-            queryClient.clear();
-            router.replace(LOGIN_ROUTE);
-            router.refresh();
+            notifyLogout();
         }
     };
 

@@ -42,7 +42,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         refetch,
     } = useQuery({
         queryKey: queryKeys.profile,
-        queryFn: getProfileApi,
+        queryFn: () => getProfileApi(),
     });
 
     const syncProfile = useCallback((nextProfile: NutritionistProfile) => {

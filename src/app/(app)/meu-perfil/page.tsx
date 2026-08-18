@@ -1,20 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/Button";
-import { LOGIN_ROUTE } from "@/src/features/auth/constants";
+import { notifyLogout } from "@/src/features/auth/services/session.service";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
 import ProfileForm from "@/src/features/profile/components/ProfileForm";
 import { ProfileFormValues } from "@/src/features/profile/schemas/profile.schemas";
 import { deleteProfileApi, updateProfileApi } from "@/src/features/profile/services/profile.service";
 
 export default function MeuPerfilPage() {
-    const router = useRouter();
-    const queryClient = useQueryClient();
     const { profile, isLoading, errorMessage, syncProfile } = useProfile();
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -33,10 +29,8 @@ export default function MeuPerfilPage() {
         try {
             setIsDeleting(true);
             await deleteProfileApi();
-            queryClient.clear();
             toast.success("Perfil excluido com sucesso.");
-            router.replace(LOGIN_ROUTE);
-            router.refresh();
+            notifyLogout();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Nao foi possivel excluir o perfil.");
         } finally {

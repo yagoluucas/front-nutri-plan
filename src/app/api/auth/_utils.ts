@@ -154,6 +154,7 @@ export function applySessionCookies(
   response: NextResponse,
   tokens: SessionTokens,
 ) {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0");
   response.cookies.set(
     AUTH_TOKEN_COOKIE_NAME,
     tokens.accessToken,
@@ -169,6 +170,7 @@ export function applySessionCookies(
 }
 
 export function clearAuthCookies(response: NextResponse) {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0");
   response.cookies.set(AUTH_TOKEN_COOKIE_NAME, "", cookieOptions(0));
   response.cookies.set(AUTH_REFRESH_COOKIE_NAME, "", cookieOptions(0));
   return response;
@@ -230,7 +232,10 @@ function sessionFailureResponse(status: 401 | 503, message: string) {
     }),
     {
       status,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+        "Content-Type": "application/json",
+      },
     },
   );
 }
@@ -295,6 +300,8 @@ export function applyAuthenticationState(
   response: NextResponse,
   result: AuthenticatedUpstreamResult,
 ) {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0");
+
   if (result.refreshedTokens) {
     applySessionCookies(response, result.refreshedTokens);
   }
