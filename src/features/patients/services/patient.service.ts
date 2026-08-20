@@ -24,6 +24,12 @@ const patientResponseSchema = z.object({
     paciente: apiPatientSchema,
 }).passthrough();
 
+const deletePatientResponseSchema = z.object({
+    message: z.string().trim().min(1),
+    error: z.literal(false),
+    statusCode: z.literal(200),
+}).passthrough();
+
 const dietPlansResponseSchema = z.object({
     planosAlimentares: z.array(persistedDietPlanSchema),
 }).passthrough();
@@ -190,8 +196,15 @@ export async function updateFirstPlanDeliveryStatusApi(
     return toPatient(parsedResponse.data.paciente);
 }
 
-export async function deletePatientApi(patientId: string): Promise<void> {
-    await requestPatientApi(`/api/pacientes/${encodeURIComponent(patientId)}`, {
+export async function deletePatientApi(patientId: string): Promise<string> {
+    const payload = await requestPatientApi(`/api/pacientes/${encodeURIComponent(patientId)}`, {
         method: "DELETE",
     });
+    const parsedResponse = deletePatientResponseSchema.safeParse(payload);
+
+    if (!parsedResponse.success) {
+        throw new Error("Resposta invalida ao excluir paciente.");
+    }
+
+    return parsedResponse.data.message;
 }

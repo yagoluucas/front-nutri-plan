@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   Trash2,
   UtensilsCrossed,
   UserPen,
+  X,
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +25,10 @@ import PDFGenerator from "@/src/features/diet-plan/components/PDFGenerator";
 import { deleteDietPlanApi } from "@/src/features/diet-plan/services/dietPlan.service";
 import { calculatePlanMicronutrients } from "@/src/features/diet-plan/utils/nutritionCalculations";
 import { usePatientQuery } from "@/src/features/patients/hooks/usePatientQueries";
-import { updateFirstPlanDeliveryStatusApi } from "@/src/features/patients/services/patient.service";
+import {
+  deletePatientApi,
+  updateFirstPlanDeliveryStatusApi,
+} from "@/src/features/patients/services/patient.service";
 import { useProfile } from "@/src/features/profile/ProfileProvider";
 import { queryKeys } from "@/src/lib/queryKeys";
 
@@ -79,6 +84,8 @@ export default function PacienteDetalhePage() {
         : null;
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
+  const [showDeletePatientConfirm, setShowDeletePatientConfirm] = useState(false);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [isUpdatingFirstPlanDelivery, setIsUpdatingFirstPlanDelivery] = useState(false);
   const visiblePlans = useMemo(
     () => patient?.planosAlimentares ?? [],
@@ -166,6 +173,31 @@ export default function PacienteDetalhePage() {
       );
     } finally {
       setDeletingPlanId(null);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!patient || isDeletingPatient) {
+      return;
+    }
+
+    setIsDeletingPatient(true);
+
+    try {
+      const message = await deletePatientApi(patient.id);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.patients.list });
+      queryClient.removeQueries({ queryKey: queryKeys.patients.detail(patient.id) });
+      toast.success(message);
+      setShowDeletePatientConfirm(false);
+      router.replace("/pacientes");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel excluir o paciente.",
+      );
+    } finally {
+      setIsDeletingPatient(false);
     }
   };
 
@@ -259,13 +291,23 @@ export default function PacienteDetalhePage() {
             <h2 className="text-heading-h4 font-semibold text-content-primary">
               Dados do paciente
             </h2>
-            <Link
-              href={`/pacientes/${patient.id}/editar`}
-              className="inline-flex h-9 items-center justify-center rounded-md bg-action-secondary px-4 text-caption font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
-            >
-              <UserPen className="mr-2 h-4 w-4" />
-              Editar dados
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href={`/pacientes/${patient.id}/editar`}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-action-secondary px-6 text-button font-semibold text-action-secondary-text shadow-sm transition-colors hover:bg-action-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-secondary-focus"
+              >
+                <UserPen className="mr-2 h-4 w-4" />
+                Editar dados
+              </Link>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeletePatientConfirm(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir paciente
+              </Button>
+            </div>
           </div>
           <dl className="mt-5 grid gap-4 text-body-small md:grid-cols-2 xl:grid-cols-3">
             <div>
@@ -585,6 +627,76 @@ export default function PacienteDetalhePage() {
           </div>
         </section>
       </div>
+
+      {showDeletePatientConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !isDeletingPatient) {
+              setShowDeletePatientConfirm(false);
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-patient-title"
+            aria-describedby="delete-patient-description"
+            className="w-full max-w-md rounded-lg border border-border-default bg-surface-default p-6 shadow-lg"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex gap-3">
+                <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-feedback-error-bg text-feedback-error-text">
+                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <h2
+                    id="delete-patient-title"
+                    className="text-heading-h3 font-semibold text-content-primary"
+                  >
+                    Deseja mesmo excluir o paciente?
+                  </h2>
+                  <p
+                    id="delete-patient-description"
+                    className="mt-2 text-body-small text-content-secondary"
+                  >
+                    O cadastro de {patient.nome} {patient.sobrenome} sera excluido permanentemente. Esta acao nao pode ser desfeita.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="rounded-md p-1 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-ghost-focus disabled:cursor-not-allowed disabled:text-content-disabled"
+                onClick={() => setShowDeletePatientConfirm(false)}
+                aria-label="Fechar confirmacao de exclusao"
+                disabled={isDeletingPatient}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowDeletePatientConfirm(false)}
+                disabled={isDeletingPatient}
+                autoFocus
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => void handleDeletePatient()}
+                disabled={isDeletingPatient}
+              >
+                {isDeletingPatient ? "Excluindo..." : "Sim, excluir paciente"}
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

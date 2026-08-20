@@ -7,6 +7,7 @@ import {
   sanitizeAuthPayload,
 } from "@/src/app/api/auth/_utils";
 import { patientUpdateRequestSchema } from "@/src/features/patients/schemas/patient.schemas";
+import { z } from "zod";
 
 interface PatientRouteContext {
   params: Promise<{
@@ -24,6 +25,10 @@ function invalidPatientResponse(message = "Dados do paciente invalidos.") {
 function getPatientUrl(patientId: string) {
   return new URL(`/pacientes/${encodeURIComponent(patientId)}`, AUTH_API_URL);
 }
+
+const patientRouteParamsSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+}).strict();
 
 async function toNextResponse(
   result: Awaited<ReturnType<typeof fetchAuthenticatedUpstream>>,
@@ -107,7 +112,13 @@ export async function PATCH(request: NextRequest, context: PatientRouteContext) 
 }
 
 export async function DELETE(request: NextRequest, context: PatientRouteContext) {
-  const { id } = await context.params;
+  const parsedParams = patientRouteParamsSchema.safeParse(await context.params);
+
+  if (!parsedParams.success) {
+    return invalidPatientResponse("Paciente invalido.");
+  }
+
+  const { id } = parsedParams.data;
 
   try {
     const result = await fetchAuthenticatedUpstream(
