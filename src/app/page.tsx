@@ -98,16 +98,16 @@ export default function Home() {
 
       <main>
         <section className="border-b border-border-subtle bg-background-page">
-          <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:py-24">
-            <div className="max-w-2xl">
+          <div className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
+            <div className="mx-auto max-w-4xl text-center">
               <p className="text-caption font-semibold uppercase text-action-primary">Nutri Plan</p>
-              <h1 className="mt-4 text-display font-bold text-content-primary sm:text-5xl sm:leading-tight">
+              <h1 className="mt-4 text-balance text-display font-bold text-content-primary sm:text-5xl sm:leading-tight">
                 Crie planos alimentares e organize seus pacientes gratuitamente
               </h1>
-              <p className="mt-6 max-w-xl text-body-large text-content-secondary">
+              <p className="mx-auto mt-6 max-w-2xl text-body-large text-content-secondary">
                 O Nutri Plan ajuda nutricionistas a cadastrar pacientes, montar refeicoes, consultar alimentos e gerar planos alimentares profissionais em PDF, tudo em um so lugar.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <PrimaryLink className="w-full sm:w-auto">Criar conta gratis</PrimaryLink>
                 <Link
                   href="#recursos"
@@ -120,7 +120,6 @@ export default function Home() {
                 Gratuito para nutricionistas <span aria-hidden="true">-</span> Sem assinatura <span aria-hidden="true">-</span> Acesso pelo navegador
               </p>
             </div>
-            <ProductPreview />
           </div>
         </section>
 
@@ -132,6 +131,24 @@ export default function Home() {
                 <span className="text-body-small font-semibold text-content-primary">{label}</span>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="product-preview-title" className="border-b border-border-subtle bg-background-page py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-caption font-semibold uppercase text-action-primary">Conheca o produto</p>
+              <h2 id="product-preview-title" className="mt-3 text-heading-h1 font-bold text-content-primary">
+                Sua rotina organizada em uma unica tela
+              </h2>
+              <p className="mt-4 text-body-default text-content-secondary">
+                Acompanhe pacientes, planos alimentares e prazos importantes em uma visao clara do seu atendimento.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-10 max-w-6xl">
+              <ProductPreview />
+            </div>
           </div>
         </section>
 
