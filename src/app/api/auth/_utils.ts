@@ -5,7 +5,6 @@ import {
 } from "@/src/features/auth/constants";
 
 const DEFAULT_LOCAL_AUTH_API_URL = "http://localhost:5000";
-const PRODUCTION_AUTH_API_URL = "https://api-nutri-plan.onrender.com";
 
 function normalizeApiUrl(value?: string) {
   const normalizedValue = value?.trim().replace(/\/+$/, "");
@@ -21,14 +20,37 @@ function normalizeApiUrl(value?: string) {
   return `http://${normalizedValue}`;
 }
 
-const configuredAuthApiUrl = normalizeApiUrl(process.env.API_URL);
-const configuredLocalAuthApiUrl = normalizeApiUrl(process.env.PUBLIC_LOCAL_URL);
+function getProductionApiUrl(value?: string) {
+  const normalizedValue = value?.trim().replace(/\/+$/, "");
+
+  if (!normalizedValue) {
+    throw new Error(
+      "API_URL deve ser configurada em producao com uma URL HTTPS completa.",
+    );
+  }
+
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl = new URL(normalizedValue);
+  } catch {
+    throw new Error(
+      "API_URL invalida em producao. Informe uma URL completa iniciando com https://.",
+    );
+  }
+
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error("API_URL deve usar HTTPS em producao.");
+  }
+
+  return parsedUrl.toString().replace(/\/+$/, "");
+}
 
 export const AUTH_API_URL =
   process.env.NODE_ENV === "production"
-    ? configuredAuthApiUrl || PRODUCTION_AUTH_API_URL
-    : configuredLocalAuthApiUrl ||
-      configuredAuthApiUrl ||
+    ? getProductionApiUrl(process.env.API_URL)
+    : normalizeApiUrl(process.env.PUBLIC_LOCAL_URL) ||
+      normalizeApiUrl(process.env.API_URL) ||
       DEFAULT_LOCAL_AUTH_API_URL;
 
 const DEFAULT_ACCESS_TOKEN_MAX_AGE = 15 * 60;
