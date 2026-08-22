@@ -84,6 +84,7 @@ export default function PacienteDetalhePage() {
         : null;
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
+  const [planIdPendingDeletion, setPlanIdPendingDeletion] = useState<string | null>(null);
   const [showDeletePatientConfirm, setShowDeletePatientConfirm] = useState(false);
   const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [isUpdatingFirstPlanDelivery, setIsUpdatingFirstPlanDelivery] = useState(false);
@@ -145,18 +146,11 @@ export default function PacienteDetalhePage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Excluir este plano alimentar permanentemente? Esta acao nao pode ser desfeita.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     setDeletingPlanId(planId);
 
     try {
       await deleteDietPlanApi(patient.id, planId);
+      setPlanIdPendingDeletion(null);
       setExpandedPlanId((currentId) => (currentId === planId ? null : currentId));
       await Promise.all([
         queryClient.invalidateQueries({
@@ -511,7 +505,7 @@ export default function PacienteDetalhePage() {
                           variant="destructive"
                           className="w-full px-4"
                           disabled={isDeletingPlan}
-                          onClick={() => void handleDeletePlan(plan.id)}
+                          onClick={() => setPlanIdPendingDeletion(plan.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           {deletingPlanId === plan.id ? "Excluindo..." : "Excluir"}
@@ -627,6 +621,76 @@ export default function PacienteDetalhePage() {
           </div>
         </section>
       </div>
+
+      {planIdPendingDeletion && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !isDeletingPlan) {
+              setPlanIdPendingDeletion(null);
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-plan-title"
+            aria-describedby="delete-plan-description"
+            className="w-full max-w-md rounded-lg border border-border-default bg-surface-default p-6 shadow-lg"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex gap-3">
+                <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-feedback-error-bg text-feedback-error-text">
+                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <h2
+                    id="delete-plan-title"
+                    className="text-heading-h3 font-semibold text-content-primary"
+                  >
+                    Deseja mesmo excluir o plano alimentar?
+                  </h2>
+                  <p
+                    id="delete-plan-description"
+                    className="mt-2 text-body-small text-content-secondary"
+                  >
+                    Depois de excluído, este plano não ficará mais disponível. Esta ação não poderá ser desfeita.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="rounded-md p-1 text-content-secondary transition-colors hover:bg-surface-muted hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-ghost-focus disabled:cursor-not-allowed disabled:text-content-disabled"
+                onClick={() => setPlanIdPendingDeletion(null)}
+                aria-label="Fechar confirmação de exclusão do plano alimentar"
+                disabled={isDeletingPlan}
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setPlanIdPendingDeletion(null)}
+                disabled={isDeletingPlan}
+                autoFocus
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => void handleDeletePlan(planIdPendingDeletion)}
+                disabled={isDeletingPlan}
+              >
+                {isDeletingPlan ? "Excluindo..." : "Sim, excluir plano"}
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {showDeletePatientConfirm && (
         <div
