@@ -5,10 +5,10 @@ import { Leaf, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
-  { href: "#recursos", label: "Recursos" },
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#sobre", label: "Sobre o projeto" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#recursos", label: "Recursos" },
+  { href: "/#como-funciona", label: "Como funciona" },
+  { href: "/#sobre", label: "Sobre o projeto" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export default function PublicHeader() {

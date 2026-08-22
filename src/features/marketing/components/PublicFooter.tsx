@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Leaf } from "lucide-react";
 
 const groups = [
-  { title: "Produto", links: [{ label: "Recursos", href: "#recursos" }, { label: "Como funciona", href: "#como-funciona" }, { label: "Novidades" }] },
-  { title: "Projeto", links: [{ label: "Sobre", href: "#sobre" }, { label: "Feedback" }, { label: "Contato" }] },
-  { title: "Ajuda", links: [{ label: "FAQ", href: "#faq" }, { label: "Relatar problema" }] },
-  { title: "Legal", links: [{ label: "Politica de privacidade" }, { label: "Termos de uso" }, { label: "Solicitacao de exclusao de dados" }] },
+  { title: "Produto", links: [{ label: "Recursos", href: "/#recursos" }, { label: "Como funciona", href: "/#como-funciona" }, { label: "Novidades" }] },
+  { title: "Projeto", links: [{ label: "Sobre", href: "/#sobre" }, { label: "Feedback" }, { label: "Contato" }] },
+  { title: "Ajuda", links: [{ label: "FAQ", href: "/#faq" }, { label: "Relatar problema" }] },
+  { title: "Legal", links: [{ label: "Politica de privacidade" }, { label: "Termos de uso" }, { label: "Politica de retencao de dados", href: "/politica-de-retencao-de-dados" }] },
 ];
 
 export default function PublicFooter() {

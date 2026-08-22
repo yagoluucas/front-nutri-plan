@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, RegisterFormValues } from "../schemas/auth.schemas";
@@ -151,6 +152,18 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
                 </div>
 
                 <div className="pt-2">
+                    <p className="mb-4 text-center text-caption text-content-muted">
+                        Ao criar sua conta, você declara que leu e aceita os Termos de Uso e a{" "}
+                        <Link
+                            href="/politica-de-retencao-de-dados"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-action-primary hover:text-action-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-primary-focus"
+                        >
+                            Política de Retenção de Dados
+                        </Link>
+                        .
+                    </p>
                     <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
                         {isSubmitting ? "Criando conta..." : "Criar minha conta"}
                     </Button>
