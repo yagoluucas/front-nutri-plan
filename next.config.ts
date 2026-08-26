@@ -12,9 +12,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self' https://api-nutri-plan.onrender.com https://res.cloudinary.com${
-    isDevelopment ? " http: https: ws: wss:" : ""
-  }`,
+  `connect-src 'self'${isDevelopment ? " http: https: ws: wss:" : ""}`,
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
   "media-src 'self' blob:",
